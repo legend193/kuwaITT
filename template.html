@@ -1,0 +1,4859 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>خريطة تاريخ الكويت ثلاثية الأبعاد 🇰🇼 | رحلة عبر التاريخ</title>
+  <style>
+    :root {
+      --sand-gold: #D4AF37;
+      --sand-warm: #EAD9B8;
+      --sand-dark: #3D2914;
+      --sea-teal: #106070;
+      --sea-deep: #083742;
+      --sea-glow: #28B9D4;
+      --kuwait-green: #007A3D;
+      --kuwait-red: #CE1126;
+      --kuwait-white: #FFFFFF;
+      --kuwait-black: #000000;
+      --card-bg: rgba(25, 20, 15, 0.78);
+      --card-border: rgba(212, 175, 55, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Cairo', 'Almarai', Tahoma, sans-serif;
+      background: #08202A;
+      color: #FFF;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* 3D WebGL Canvas */
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      display: block;
+      cursor: grab;
+    }
+    #webgl-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* شريط السدو التراثي في أعلى الشاشة */
+    .sadu-stripe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      z-index: 50;
+      background: repeating-linear-gradient(
+        45deg,
+        #B31B1B 0, #B31B1B 12px,
+        #1A1A1A 12px, #1A1A1A 24px,
+        #F0E5D0 24px, #F0E5D0 36px,
+        #C59B27 36px, #C59B27 48px
+      );
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    /* الهيدر العلوي العائم (Glassmorphism) */
+    .top-header {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(18, 28, 34, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 10px 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo-dhow {
+      font-size: 28px;
+      filter: drop-shadow(0 2px 6px rgba(212,175,55,0.4));
+      animation: bobbing 3s ease-in-out infinite;
+    }
+
+    @keyframes bobbing {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 900;
+      color: #FFF;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title span.badge-3d {
+      background: linear-gradient(135deg, #C59B27, #F2D272);
+      color: #241403;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 2px 7px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: #A3CAD4;
+      font-weight: 600;
+    }
+
+    /* شريط المحطات الأفقية التفاعلية 1..10 */
+    .stages-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(8, 16, 20, 0.6);
+      padding: 5px 10px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stage-pill {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.08);
+      color: #9EC0C9;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stage-pill:hover:not(.locked) {
+      transform: scale(1.12);
+      border-color: var(--sand-gold);
+      color: #FFF;
+    }
+    .stage-pill.active {
+      background: linear-gradient(135deg, #D4AF37, #F7DE8B);
+      color: #2B1800;
+      border-color: #FFF;
+      box-shadow: 0 0 16px rgba(247, 222, 139, 0.65);
+      transform: scale(1.15);
+    }
+    .stage-pill.completed {
+      background: var(--kuwait-green);
+      color: #FFF;
+      border-color: #A3E7BF;
+      box-shadow: 0 0 10px rgba(0, 122, 61, 0.4);
+    }
+    .stage-pill.locked {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* إحصائيات الفريق والأزرار السريعة */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #F0E3C8;
+    }
+    .stat-chip .val {
+      color: #F7DE8B;
+      font-weight: 900;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: #FFF;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(212, 175, 55, 0.25);
+      border-color: var(--sand-gold);
+      transform: scale(1.08);
+    }
+
+    /* زر تبديل مركبة الاستكشاف التفاعلي */
+    .vehicle-toggle-btn {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(18, 30, 40, 0.9));
+      border: 1.5px solid rgba(212, 175, 55, 0.6);
+      border-radius: 20px;
+      padding: 5px 13px;
+      color: #F7DE8B;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      transition: all 0.25s ease;
+      font-family: inherit;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .vehicle-toggle-btn:hover {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.45), rgba(28, 48, 64, 0.95));
+      border-color: #F7DE8B;
+      color: #FFF;
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.45);
+    }
+    .vehicle-toggle-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* لوحة التحكم بالكاميرا ثلاثية الأبعاد (عائمة في الزاوية العلوية اليمنى) */
+    .cam-controls {
+      position: absolute;
+      top: 90px;
+      right: 18px;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .cam-btn {
+      background: rgba(14, 25, 32, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: 12px;
+      color: #E2EFF2;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: all 0.2s;
+    }
+    .cam-btn:hover {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: var(--sand-gold);
+      color: #FFF;
+      transform: translateX(-3px);
+    }
+    .cam-btn.active {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.35) 0%, rgba(0, 122, 61, 0.35) 100%);
+      border-color: var(--sand-gold);
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+    }
+
+    /* لوحة الكاميرا الحرة وفاحص الإحداثيات المباشر (Free Cam Inspector) */
+    .freecam-hud {
+      position: absolute;
+      top: 86px;
+      left: 18px;
+      z-index: 40;
+      width: 320px;
+      background: rgba(12, 22, 28, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1.5px solid var(--sand-gold);
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.65), 0 0 20px rgba(212, 175, 55, 0.25);
+      color: #E2EEF0;
+      font-size: 13px;
+      transition: all 0.3s ease;
+      user-select: text;
+    }
+    .freecam-hud.minimized .freecam-body {
+      display: none;
+    }
+    .freecam-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    .freecam-title {
+      font-weight: 900;
+      color: #F7DE8B;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00E676;
+      box-shadow: 0 0 8px #00E676;
+      animation: pulseLive 1.5s infinite;
+    }
+    @keyframes pulseLive {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .freecam-min-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #FFF;
+      border-radius: 6px;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .freecam-min-btn:hover {
+      background: rgba(212, 175, 55, 0.3);
+      border-color: var(--sand-gold);
+    }
+    .freecam-row {
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .freecam-row label {
+      font-size: 11px;
+      color: #A3C7CE;
+      font-weight: 700;
+    }
+    .freecam-select {
+      background: rgba(20, 35, 45, 0.95);
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      color: #FFF;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+    .freecam-coords-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .coord-line {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .coord-label {
+      font-size: 11px;
+      color: #90B6BD;
+      font-weight: 700;
+    }
+    .coord-values {
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      color: #00E5FF;
+      font-weight: 800;
+      direction: ltr;
+      text-align: left;
+    }
+    .freecam-code-preview {
+      background: rgba(5, 10, 15, 0.7);
+      border: 1px dashed rgba(212, 175, 55, 0.35);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 10.5px;
+      color: #F7DE8B;
+      direction: ltr;
+      text-align: left;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .freecam-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .fc-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 11.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .fc-btn.primary {
+      background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+      color: #000;
+    }
+    .fc-btn.primary:hover {
+      box-shadow: 0 0 14px rgba(212, 175, 55, 0.6);
+      transform: translateY(-1px);
+    }
+    .fc-btn.secondary {
+      background: rgba(0, 122, 61, 0.8);
+      color: #FFF;
+      border: 1px solid #57E395;
+    }
+    .fc-btn.secondary:hover {
+      background: rgba(0, 122, 61, 1);
+      transform: translateY(-1px);
+    }
+    .fc-btn.outline {
+      background: rgba(255, 255, 255, 0.08);
+      color: #D1E7ED;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .fc-btn.outline:hover {
+      background: rgba(212, 175, 55, 0.2);
+      border-color: var(--sand-gold);
+      color: #FFF;
+    }
+    .freecam-tips {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #83A8B0;
+      text-align: center;
+      line-height: 1.4;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 6px;
+      user-select: none;
+    }
+
+    /* بطاقة المحطة الحالية العائمة بالأسفل */
+    .bottom-station-card {
+      position: absolute;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      width: min(740px, calc(100vw - 36px));
+      background: rgba(15, 24, 30, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1.5px solid var(--sand-gold);
+      border-radius: 20px;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px rgba(212, 175, 55, 0.2);
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideUp {
+      from { transform: translate(-50%, 40px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+
+    .station-info {
+      flex: 1;
+    }
+
+    .station-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--sand-gold);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .station-name {
+      font-size: 21px;
+      font-weight: 900;
+      color: #FFF;
+      margin: 2px 0 4px 0;
+    }
+
+    .station-desc {
+      font-size: 13px;
+      color: #B2D1D8;
+      line-height: 1.4;
+    }
+
+    .action-btn-main {
+      background: linear-gradient(135deg, #D4AF37 0%, #F5CE6A 50%, #C49B26 100%);
+      color: #271600;
+      font-size: 15px;
+      font-weight: 900;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 26px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+    }
+    .action-btn-main:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 26px rgba(245, 206, 106, 0.6);
+    }
+    .action-btn-main:active {
+      transform: translateY(1px);
+    }
+
+    .action-btn-main.completed-review {
+      background: rgba(0, 122, 61, 0.35);
+      border: 1.5px solid #48D588;
+      color: #C7F7DC;
+      box-shadow: none;
+    }
+
+    /* دليل المحطات الجانبي (Drawer) */
+    .stops-drawer {
+      position: absolute;
+      top: 86px;
+      left: 18px;
+      width: 320px;
+      max-height: calc(100vh - 120px);
+      background: rgba(14, 23, 29, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      z-index: 35;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+      transform: translateX(-120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .stops-drawer.open {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--sand-gold);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-list {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-left: 4px;
+    }
+    .drawer-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .drawer-list::-webkit-scrollbar-thumb {
+      background: rgba(212, 175, 55, 0.4);
+      border-radius: 4px;
+    }
+
+    .drawer-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .drawer-item:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: var(--sand-gold);
+    }
+    .drawer-item.active {
+      background: rgba(212, 175, 55, 0.25);
+      border-color: var(--sand-gold);
+    }
+    .drawer-item.done {
+      border-color: rgba(0, 122, 61, 0.6);
+    }
+
+    /* نافذة السؤال التفاعلية (Modal) */
+    .quiz-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      background: rgba(5, 12, 16, 0.75);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .quiz-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .quiz-card-modal {
+      width: min(640px, 94vw);
+      background: linear-gradient(165deg, #1B2931 0%, #111B22 100%);
+      border: 2px solid var(--sand-gold);
+      border-radius: 24px;
+      padding: 26px 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(212, 175, 55, 0.25);
+      transform: scale(0.92);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .quiz-overlay.open .quiz-card-modal {
+      transform: scale(1);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .modal-station-badge {
+      font-size: 13px;
+      font-weight: 800;
+      background: rgba(212, 175, 55, 0.2);
+      color: #F7DE8B;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(212, 175, 55, 0.4);
+    }
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: transparent;
+      color: #FFF;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .modal-q-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFF;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .options-grid { grid-template-columns: 1fr; }
+    }
+
+    .opt-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      color: #E2EEF0;
+      padding: 14px 16px;
+      font-size: 14.5px;
+      font-weight: 700;
+      text-align: right;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+    .opt-btn:hover {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: var(--sand-gold);
+      color: #FFF;
+      transform: translateY(-2px);
+    }
+    .opt-btn.correct {
+      background: rgba(0, 122, 61, 0.5) !important;
+      border-color: #57E395 !important;
+      color: #FFF !important;
+      box-shadow: 0 0 16px rgba(0, 122, 61, 0.6);
+    }
+    .opt-btn.wrong {
+      background: rgba(206, 17, 38, 0.5) !important;
+      border-color: #FF6675 !important;
+      color: #FFF !important;
+      animation: shake 0.4s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .modal-explanation {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(212, 175, 55, 0.4);
+      font-size: 13.5px;
+      color: #EADCB8;
+      display: none;
+      line-height: 1.45;
+    }
+    .modal-explanation.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-advance-btn {
+      margin-top: 18px;
+      width: 100%;
+      background: linear-gradient(135deg, #007A3D 0%, #009E4F 100%);
+      color: #FFF;
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 900;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 122, 61, 0.4);
+    }
+
+    /* نافذة الفوز النهائية */
+    .win-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 120;
+      background: rgba(4, 10, 14, 0.85);
+      backdrop-filter: blur(16px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .win-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .win-box {
+      width: min(580px, 94vw);
+      background: linear-gradient(165deg, #1B2931 0%, #0E171E 100%);
+      border: 2px solid var(--sand-gold);
+      border-radius: 28px;
+      padding: 34px 28px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 50px rgba(212, 175, 55, 0.35);
+    }
+    .win-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #F7DE8B;
+      margin: 12px 0 8px 0;
+    }
+    .win-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 22px 0;
+    }
+    .win-stat-col {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 14px;
+      padding: 12px 8px;
+    }
+    .win-stat-val {
+      font-size: 20px;
+      font-weight: 900;
+      color: #F7DE8B;
+    }
+    .win-stat-lbl {
+      font-size: 11px;
+      color: #9FC0C8;
+      margin-top: 4px;
+    }
+
+    /* بطاقة وسام وشهادة نوخذة الكويت التراثية */
+    .heritage-certificate-card {
+      margin: 16px 0;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(0, 122, 61, 0.18) 100%);
+      border: 2px solid var(--sand-gold);
+      border-radius: 18px;
+      padding: 6px;
+      box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.25);
+    }
+    .cert-border-inner {
+      border: 1px dashed rgba(212, 175, 55, 0.65);
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: rgba(14, 23, 30, 0.75);
+    }
+    .cert-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+      padding-bottom: 8px;
+    }
+    .cert-stamps-row {
+      font-size: 11.5px;
+      color: #F7DE8B;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+    @media print {
+      body * { visibility: hidden !important; }
+      #winModal, #winModal * { visibility: visible !important; }
+      #winModal { position: fixed !important; left: 0 !important; top: 0 !important; width: 100vw !important; height: 100vh !important; background: #FFF !important; }
+      .win-box { border: 2px solid #000 !important; background: #FFF !important; color: #000 !important; box-shadow: none !important; width: 90% !important; margin: 20px auto !important; }
+      .heritage-certificate-card { background: #FFF !important; border-color: #000 !important; }
+      .cert-border-inner { background: #FFF !important; color: #000 !important; border-color: #000 !important; }
+      .cert-header div div { color: #000 !important; }
+      .cert-border-inner p { color: #222 !important; }
+      .win-title { color: #000 !important; }
+      .win-stat-val { color: #000 !important; }
+      button { display: none !important; }
+    }
+
+    /* تلميح مساعدة ثلاثي الأبعاد في الزاوية */
+    .controls-hint {
+      position: absolute;
+      bottom: 22px;
+      right: 20px;
+      z-index: 20;
+      background: rgba(10, 18, 24, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 11.5px;
+      color: #91B8C1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .game-toast {
+      position: fixed;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(10, 35, 55, 0.94);
+      border: 1px solid rgba(0, 209, 178, 0.55);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      color: #FFF;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 700;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .game-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 900px) {
+      .top-header { flex-wrap: wrap; padding: 8px 12px; }
+      .stages-bar { order: 3; width: 100%; justify-content: center; margin-top: 4px; }
+      .brand-sub { display: none; }
+      .controls-hint { display: none; }
+      .bottom-station-card { flex-direction: column; align-items: stretch; text-align: center; }
+      .action-btn-main { justify-content: center; }
+      .vehicle-toggle-btn #vehicleBtnLabel { display: none; }
+      .vehicle-toggle-btn { padding: 6px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- شريط السدو التراثي -->
+  <div class="sadu-stripe"></div>
+
+  <!-- إشعار سينمائي وتفاعلي عائم -->
+  <div id="gameToast" class="game-toast"></div>
+
+  <!-- 3D Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- الهيدر العلوي العائم -->
+  <header class="top-header">
+    <div class="brand-section">
+      <div class="brand-logo-dhow">⛵</div>
+      <div>
+        <div class="brand-title">
+          <span>رحلة عبر تاريخ الكويت</span>
+          <span class="badge-3d">3D ثلاثية الأبعاد</span>
+        </div>
+        <div class="brand-sub">جولة شاملة تطوف كافة أرجاء وجزر الكويت من الشمال إلى الجنوب 🇰🇼</div>
+      </div>
+    </div>
+
+    <!-- شريط المحطات العشر -->
+    <div class="stages-bar" id="stagesBar"></div>
+
+    <!-- إحصائيات وأدوات سريعة -->
+    <div class="header-actions">
+      <div class="stat-chip" title="الأعلام المرفوعة">
+        <span>🇰🇼</span>
+        <span class="val" id="flagsCounter">0 / 10</span>
+      </div>
+      <div class="stat-chip" title="وقت الرحلة">
+        <span>⏱️</span>
+        <span class="val" id="teamTimer">00:00</span>
+      </div>
+      <div class="stat-chip" title="الرتبة التراثية">
+        <span id="rankBadge">🌊 بحّار مستكشف</span>
+      </div>
+      <button class="vehicle-toggle-btn" id="vehicleToggleBtn" title="تبديل وسيلة الاستكشاف البري (جمل تراثي / جيب رانجلر / هيونداي أكسنت)">
+        <span id="vehicleBtnIcon" style="font-size:16px;">🐪</span>
+        <span id="vehicleBtnLabel">الجمل التراثي</span>
+      </button>
+      <button class="icon-btn" id="soundToggleBtn" title="كتم/تشغيل الصوت">🔊</button>
+      <button class="icon-btn" id="drawerToggleBtn" title="دليل المحطات">📜</button>
+      <button class="icon-btn" id="fullscreenBtn" title="ملء الشاشة">⛶</button>
+    </div>
+  </header>
+
+  <!-- أزرار الكاميرا السينمائية والحرة -->
+  <div class="cam-controls">
+    <button class="cam-btn active" id="camFreeToggleBtn" title="تفعيل/تعطيل لوحة الكاميرا الحرة ومسجل الإحداثيات">
+      <span>🎥</span>
+      <span id="freeCamBtnLabel">فري كام (مفعل)</span>
+    </button>
+    <button class="cam-btn" id="camOverviewBtn" title="نظرة شاملة على كامل خريطة الكويت">
+      <span>🌍</span>
+      <span>نظرة شاملة</span>
+    </button>
+    <button class="cam-btn" id="camFocusBtn" title="التركيز على المحطة الحالية">
+      <span>📍</span>
+      <span>المحطة الحالية</span>
+    </button>
+    <button class="cam-btn" id="camCoastBtn" title="منظر أسطول السفن والساحل">
+      <span>⛵</span>
+      <span>أسطول السفن</span>
+    </button>
+  </div>
+
+  <!-- لوحة الكاميرا الحرة ومحدد الإحداثيات المباشر (Free Cam Coordinate Inspector) -->
+  <div class="freecam-hud" id="freeCamHud">
+    <div class="freecam-header">
+      <div class="freecam-title">
+        <span class="live-dot"></span>
+        <span>🎥 فري كام ومسجل الإحداثيات</span>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="freecam-min-btn" id="freeCamMinBtn" title="تصغير/تكبير اللوحة">−</button>
+      </div>
+    </div>
+    
+    <div class="freecam-body" id="freeCamBody">
+      <div class="freecam-row">
+        <label for="freeCamStopSelect">المحطة المستهدفة:</label>
+        <select id="freeCamStopSelect" class="freecam-select">
+          <option value="1">1. جزيرة فيلكا (معبد إيكاروس)</option>
+          <option value="2">2. أبراج الكويت (رأس عجوزة)</option>
+          <option value="3">3. سوق المباركية وقصر السيف</option>
+          <option value="4">4. كاظمة التاريخية (البيوت الطينية والجون)</option>
+          <option value="5">5. جزيرة بوبيان (ميناء مبارك الكبير)</option>
+          <option value="causeway">🌉 جسر الشيخ جابر الأحمد (جون الكويت)</option>
+          <option value="6">6. واحة الروضتين ومزارع العبدلي</option>
+          <option value="7">7. السالمي ووادي الباطن</option>
+          <option value="8">8. القصر الأحمر بالجهراء</option>
+          <option value="9">9. حقل برقان ومدينة الأحمدي</option>
+          <option value="10">10. دانة الخيران ومغاصات اللؤلؤ</option>
+        </select>
+      </div>
+
+      <div class="freecam-coords-box">
+        <div class="coord-line">
+          <span class="coord-label">📷 موقع الكاميرا (Camera Pos):</span>
+          <span class="coord-values" id="fcCamPos">X: 0.0 | Y: 0.0 | Z: 0.0</span>
+        </div>
+        <div class="coord-line">
+          <span class="coord-label">🎯 نقطة النظر (LookAt Target):</span>
+          <span class="coord-values" id="fcTargetPos">X: 0.0 | Y: 0.0 | Z: 0.0</span>
+        </div>
+      </div>
+
+      <div class="freecam-code-preview" id="fcCodePreview">
+        targetPos = new THREE.Vector3(...);<br>
+        targetLookAt = new THREE.Vector3(...);
+      </div>
+
+      <div class="freecam-actions">
+        <button class="fc-btn primary" id="fcCopyCurrentBtn" title="نسخ إحداثيات هذه المحطة للحافظة">
+          <span>📋 نسخ إحداثيات النقطة</span>
+        </button>
+        <button class="fc-btn secondary" id="fcSaveStopBtn" title="حفظ إحداثيات المحطة المحددة في الذاكرة">
+          <span>💾 حفظ للمحطة</span>
+        </button>
+      </div>
+      
+      <div class="freecam-actions" style="margin-top:6px;">
+        <button class="fc-btn outline" id="fcCopyAllBtn" title="نسخ تقرير شامل لجميع المحطات التي قمت بضبطها">
+          <span>📦 نسخ ملخص كل المحطات</span>
+        </button>
+        <button class="fc-btn outline" id="fcJumpStopBtn" title="طيران الكاميرا بجوار المحطة المحددة">
+          <span>🚀 طيران للمحطة</span>
+        </button>
+      </div>
+
+      <div class="freecam-tips">
+        <span>🖱️ <strong>يسار:</strong> تدوير حر 360°</span> · 
+        <span>🖱️ <strong>يمين / Shift:</strong> تحريك (Pan)</span> · 
+        <span>⚙️ <strong>عجلة:</strong> تقريب</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- بطاقة المحطة الحالية العائمة بالأسفل -->
+  <div class="bottom-station-card" id="bottomCard">
+    <div class="station-info">
+      <div class="station-tag" id="cardStationTag">📍 المحطة 1 من 10</div>
+      <div class="station-name" id="cardStationName">جزيرة فيلكا</div>
+      <div class="station-desc" id="cardStationDesc">انقروا للإجابة عن السؤال التاريخي لرفع علم الكويت ومد الخط للمحطة التالية.</div>
+    </div>
+    <button class="action-btn-main" id="solveChallengeBtn">
+      <span>🧩 حل تحدي المحطة 1</span>
+    </button>
+  </div>
+
+  <!-- تلميح التحكم بالماوس/اللمس -->
+  <div class="controls-hint">
+    <span>🖱️ اسحب للتدوير 360° · عجلة الماوس للتقريب والتكبير</span>
+  </div>
+
+  <!-- دليل المحطات الجانبي (Drawer) -->
+  <div class="stops-drawer" id="stopsDrawer">
+    <div class="drawer-title">
+      <span>🗺️ مسار المحطات العشر في ربوع الوطن</span>
+      <button class="close-btn" id="closeDrawerBtn">✕</button>
+    </div>
+    <div class="drawer-list" id="drawerList"></div>
+  </div>
+
+  <!-- نافذة السؤال التفاعلية (Modal) -->
+  <div class="quiz-overlay" id="quizModal">
+    <div class="quiz-card-modal">
+      <div class="modal-head">
+        <span class="modal-station-badge" id="modalBadge">المحطة 1 من 10 · جزيرة فيلكا</span>
+        <button class="close-btn" id="closeModalBtn">✕</button>
+      </div>
+      <div class="modal-q-text" id="modalQuestionText">...</div>
+      <div class="options-grid" id="modalOptionsGrid"></div>
+      <div class="modal-explanation" id="modalExplanation"></div>
+      <button class="modal-advance-btn" id="modalAdvanceBtn">
+        <span>رفع علم الكويت والتوجه للمحطة التالية 🇰🇼〰️</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- نافذة الفوز الكبرى وشهادة نوخذة الكويت التراثية -->
+  <div class="win-overlay" id="winModal">
+    <div class="win-box">
+      <div style="font-size: 52px; animation: bobbing 2s infinite;">🇰🇼🏆🎉</div>
+      <h2 class="win-title">ألف مبروك! أتممتم رحلة تاريخ الكويت كاملة!</h2>
+      <p style="color: #B5D2D8; font-size: 14px; line-height: 1.5;">
+        رفرفت أعلام الكويت العشرة فوق كل ربوع الوطن من الشمال إلى الجنوب ومن الشرق إلى الغرب!
+      </p>
+
+      <div class="heritage-certificate-card" id="heritageCertificate">
+        <div class="cert-border-inner">
+          <div class="cert-header">
+            <span style="font-size:24px;">🇰🇼</span>
+            <div>
+              <div style="font-size:11px; letter-spacing:1px; color:#D4AF37; font-weight:800;">دولة الكويت · رحلة التاريخ والسيادة الوطنية</div>
+              <div style="font-size:18px; font-weight:900; color:#FFF;">وسام وشهادة نوخذة الكويت الكبير</div>
+            </div>
+            <span style="font-size:24px;">👑</span>
+          </div>
+          <p style="font-size:12.5px; color:#E0EAE8; margin:10px 0; line-height:1.6;">
+            تُمنح هذه الشهادة التقديرية الفخرية للمستكشف البطل لاجتيازه بنجاح كافة المحطات التاريخية العشر، ومعرفة تراث الآباء والأجداد الخالد من جزيرة فيلكا حتى الخيران.
+          </p>
+          <div class="cert-stamps-row">
+            <span>🏛️ فيلكا</span> · <span>🗼 الأبراج</span> · <span>🏪 المباركية</span> · <span>⚔️ كاظمة</span> · <span>🌉 بوبيان</span> · <span>🌴 الروضتين</span> · <span>🏜️ السالمي</span> · <span>🏰 القصر الأحمر</span> · <span>🛢️ برقان</span> · <span>🦪 الخيران</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="win-stats-grid">
+        <div class="win-stat-col">
+          <div class="win-stat-val">10 / 10</div>
+          <div class="win-stat-lbl">الأعلام المرفوعة</div>
+        </div>
+        <div class="win-stat-col">
+          <div class="win-stat-val" id="winTime">00:00</div>
+          <div class="win-stat-lbl">الوقت المستغرق</div>
+        </div>
+        <div class="win-stat-col">
+          <div class="win-stat-val">👑 نوخذة الوطن</div>
+          <div class="win-stat-lbl">الرتبة التراثية المستحقة</div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px;">
+        <button class="action-btn-main" style="background: linear-gradient(135deg, #D4AF37 0%, #A9750D 100%); color:#000; font-weight:900;" onclick="window.print()">
+          <span>📜 طباعة / حفظ الشهادة التراثية</span>
+        </button>
+        <button class="action-btn-main" id="restartGameBtn">
+          <span>🔄 إعادة الرحلة</span>
+        </button>
+        <button class="action-btn-main" style="background: rgba(255,255,255,0.1); color:#FFF; border:1px solid rgba(255,255,255,0.3);" onclick="document.getElementById('winModal').classList.remove('open')">
+          <span>🗺️ استعراض الخريطة الحرة</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- تضمين Three.js و OrbitControls و GLTFLoader محلياً -->
+  <script src="three.min.js"></script>
+  <script>
+    if (!window.THREE) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+  <script src="OrbitControls.js"></script>
+  <script>
+    if (!window.THREE || !window.THREE.OrbitControls) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>');
+    }
+  </script>
+  <script src="GLTFLoader.js"></script>
+  <script>
+    if (!window.THREE || !window.THREE.GLTFLoader) {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"><\/script>');
+    }
+  </script>
+
+  <!-- تضمين بيانات مجسمات السفن والمركبات والمباني المدمجة محلياً لضمان التشغيل الفوري بدون حظر CORS -->
+  <script src="models/kuwait_towers_data.js"></script>
+  <script src="models/souq_al_mubarakiya_data.js"></script>
+  <script src="models/kazma_mudbrick_houses_data.js"></script>
+  <script src="models/kazima_citadel_data.js"></script>
+  <script src="models/jaber_causeway_bridge_data.js"></script>
+  <script src="models/mubarak_alkabeer_port_data.js"></script>
+  <script src="models/kuwait_water_towers_data.js"></script>
+  <script src="models/bayt_al_shaar_tent_data.js"></script>
+  <script src="models/red_palace_data.js"></script>
+  <script src="models/oil_pumpjack_data.js"></script>
+  <script src="models/oyster_shell_pearl_data.js"></script>
+  <script src="models/seif_palace_data.js"></script>
+  <script src="models/boubyan_causeway_data.js"></script>
+  <script src="models/rawdatain_oasis_data.js"></script>
+  <script src="models/salmi_desert_fort_data.js"></script>
+  <script src="models/burgan_oil_data.js"></script>
+  <script src="models/khiran_pearl_data.js"></script>
+  <script src="models/kuwaiti_boum_ship_data.js"></script>
+  <script src="models/kuwaiti_small_boat_data.js"></script>
+  <script src="models/sand_texture_data.js"></script>
+  <script src="models/jeep_wrangler_data.js"></script>
+  <script src="models/camel_data.js"></script>
+  <script src="models/hyundai_accent_data.js"></script>
+  <script src="models/greek_temple_data.js"></script>
+
+  <!-- الكود البرمجي الكامل والبيانات الدقيقة -->
+  <script>
+    // =========================================================================
+    // 1) الحدود الجغرافية الدقيقة لدولة الكويت وجزرها (GeoJSON Polygons)
+    // =========================================================================
+    const KUWAIT_3D_POLYGONS = __POLY_DATA__;
+
+    // =========================================================================
+    // 2) المحطات التاريخية العشر موزعة على كافة أرجاء وجغرافية الكويت
+    // 📝 معلومات تراثية موثقة وخيارات أسئلة مطهرة ونقية تماماً
+    // =========================================================================
+    const STOPS = [
+      {
+        id: 1,
+        title: "جزيرة فيلكا (معبد إيكاروس)",
+        place: "أقصى الشرق · جزيرة فيلكا والآثار الإغريقية",
+        x: 80.8, z: -13.6,
+        era: "القرن الرابع ق.م · حضارة دلمون والعصر الهيلينستي",
+        question: "سؤال المحطة 1: ما اسم الجزيرة التاريخية العريقة التي ارتبطت بحضارة دلمون القديمة واحتضنت المعبد الإغريقي في الكويت؟",
+        options: ["جزيرة فيلكا", "جزيرة بوبيان", "جزيرة وربة", "جزيرة كبّر"],
+        correct: 0,
+        explanation: "تحتضن جزيرة فيلكا معبد إيكاروس وآثاراً تعود لأكثر من 4000 عام؛ حوت مستوطنات العصر البرونزي ومقر المستعمرة الإغريقية ومعبد أرتميس الإغريقي الشهير وتعد شاهداً تاريخياً على دور الكويت كملتقى للحضارات العالمية."
+      },
+      {
+        id: 2,
+        title: "رأس عجوزة وأبراج الكويت",
+        place: "الواجهة البحرية لمدينة الكويت",
+        x: 56.5, z: -2.8,
+        era: "1979م · عصر النهضة العمرانية الحديثة",
+        question: "سؤال المحطة 2: ما هو المعلم الوطني الأشهر في رأس عجوزة المكون من 3 أبراج متلألئة مستوحاة من التراث الكويتي؟",
+        options: ["أبراج الكويت", "برج التحرير", "برج الحمراء", "برج التجارية"],
+        correct: 0,
+        explanation: "افتتحت أبراج الكويت في 1 مارس 1979م برأس عجوزة، وتستوحي كراتها الثلاث المغطاة بـ 55 ألف قرص صيني ملون من أدوات التراث والضيافة الكويتية (المبخر والمرش والمكحلة) كرمز خالد للنهضة والسيادة الوطنية."
+      },
+      {
+        id: 3,
+        title: "سوق المباركية وقصر السيف",
+        place: "مركز العاصمة والمدينة القديمة",
+        x: 35.0, z: 1.0,
+        era: "1897م · عهد الشيخ مبارك الصباح",
+        question: "سؤال المحطة 3: ما هو أقدم وأعرق سوق تراثي وشعبي يقع في قلب مدينة الكويت القديمة؟",
+        options: ["سوق المباركية", "سوق السالمية", "سوق الجمعة", "سوق الحرير"],
+        correct: 0,
+        explanation: "يعود تاريخ سوق المباركية لأكثر من 120 عاماً، سُمي نسبة للشيخ مبارك الصباح، وكان يمثل المركز التجاري والمالي للكويت القديمة بأزقته المسقوفة بخشب الجندل ودكاكينه التراثية وقربه من كشك مبارك وقصر السيف العامر."
+      },
+      {
+        id: 4,
+        title: "كاظمة التاريخية (البيوت الطينية)",
+        place: "شمال جون الكويت المطل على البحر",
+        x: 28.0, z: -17.5,
+        era: "12هـ / 633م · صدر الإسلام والقرى الطينية العريقة",
+        question: "سؤال المحطة 4: ما هي المنطقة التاريخية شمال الجون التي اشتهرت ببيوتها الطينية وقوافلها وشهدت معركة ذات السلاسل عام 12هـ؟",
+        options: ["كاظمة التاريخية", "الروضتين", "أم الهيمان", "العبدلي"],
+        correct: 0,
+        explanation: "كاظمة منطقة تاريخية مشهورة في الشعر العربي القديم ومأهولة بالبيوت الطينية والآبار العذبة، شهدت معركة ذات السلاسل الفاصلة بقيادة القائد الإسلامي خالد بن الوليد رضي الله عنه ضد الفرس، ومحطة رئيسية على طريق القوافل البرية والبحرية."
+      },
+      {
+        id: 5,
+        title: "جزيرة بوبيان (ميناء مبارك الكبير)",
+        place: "شمال شرق الكويت · كبرى الجزر وميناء مبارك الكبير",
+        x: 74.0, z: -49.0,
+        era: "890 كم² · ميناء مبارك الكبير ومحمية رامسار الدولية",
+        question: "سؤال المحطة 5: ما هي أكبر الجزر الكويتية مساحة وثاني أكبر جزر الخليج العربي، التي تحتضن ميناء مبارك الكبير الاستراتيجي؟",
+        options: ["جزيرة بوبيان", "جزيرة كبّر", "جزيرة فيلكا", "جزيرة قاروه"],
+        correct: 0,
+        explanation: "جزيرة بوبيان تبلغ مساحتها 890 كم² وتضم ميناء مبارك الكبير الاستراتيجي ومحمية مبارك الدولية المسجلة في اتفاقية رامسار، وترتبط بالعاصمة عبر شبكة الطرق وجسر الشيخ جابر الأحمد رابع أطول جسر بحري في العالم."
+      },
+      {
+        id: 6,
+        title: "واحة الروضتين والعبدلي",
+        place: "أقصى شمال الكويت · ينابيع الماء والزراعة",
+        x: 32.0, z: -55.0,
+        era: "1960م · استكشاف الينابيع الطبيعية العذبة",
+        question: "سؤال المحطة 6: ما هي المنطقة الشمالية العريقة التي اشتهرت بآبارها العذبة وتعد مهد المياه المعدنية الطبيعية في الكويت؟",
+        options: ["الروضتين والعبدلي", "الخيران", "الوفرة", "برقان"],
+        correct: 0,
+        explanation: "حقل الروضتين في شمال الكويت يعد من أهم مكامن المياه العذبة الطبيعية النقية تاريخياً، وتجاوره مزارع العبدلي الواعدة التي تمثل سلة الكويت الغذائية الخضراء في الشمال."
+      },
+      {
+        id: 7,
+        title: "السالمي ووادي الباطن",
+        place: "أقصى غرب الكويت · بادية الشرف وطرق القوافل",
+        x: -45.0, z: -2.0,
+        era: "طرق القوافل التاريخية وحصن السالمي",
+        question: "سؤال المحطة 7: ماذا يسمى الوادي الجغرافي التاريخي العريق الذي يمتد على طول الحدود الغربية لدولة الكويت؟",
+        options: ["وادي الباطن", "وادي الرمة", "وادي حنيفة", "وادي الدواسر"],
+        correct: 0,
+        explanation: "يمثل وادي الباطن معلماً تضاريسياً وتاريخياً مهماً في بادية الكويت الغربية، وكان طريقاً رئيسياً لقوافل التجارة والحج عبر العصور وممراً طبيعياً يربط الكويت بقلب الجزيرة العربية."
+      },
+      {
+        id: 8,
+        title: "القصر الأحمر في واحة الجهراء",
+        place: "بوابة الكويت الغربية · واحة الجهراء",
+        x: 3.0, z: -4.0,
+        era: "1896م · معركة الجهراء التاريخية 1920م",
+        question: "سؤال المحطة 8: ما اسم الحصن التاريخي الشهير في الجهراء الذي سطّر بطولات معركة الجهراء عام 1920م؟",
+        options: ["القصر الأحمر", "قصر نايف", "حصن الصبية", "قلعة وربة"],
+        correct: 0,
+        explanation: "شُيّد القصر الأحمر في عهد الشيخ مبارك الصباح عام 1896م وسُمي نسبة لطينه ولونه الأحمر، وشهد صمود وبطولات أهل الكويت وتكاتفهم للدفاع عن وطنهم في معركة الجهراء الخالدة عام 1920م."
+      },
+      {
+        id: 9,
+        title: "مدينة الأحمدي وحقل برقان",
+        place: "جنوب الكويت · مهد النهضة والنفط",
+        x: 54.0, z: 24.0,
+        era: "30 يونيو 1946م · تصدير أول شحنة نفط كويتية",
+        question: "سؤال المحطة 9: ما هي المدينة الجنوبية التي ارتبط اسمها باكتشاف وتصدير أول شحنة نفط كويتية عام 1946م؟",
+        options: ["مدينة الأحمدي", "مدينة الحرير", "الفروانية", "حولي"],
+        correct: 0,
+        explanation: "تأسست مدينة الأحمدي بالقرب من حقل برقان العملاق (ثاني أكبر حقل تقليدي بالعالم)، ودشن الشيخ أحمد الجابر الصباح تصدير أول شحنة نفط خام عام 1946 معلناً فجر النهضة والازدهار الحديث للكويت."
+      },
+      {
+        id: 10,
+        title: "الخيران والنويصيب ومغاصات اللؤلؤ",
+        place: "أقصى جنوب الساحل الكويتي · خور الخيران وهيرات الغوص",
+        x: 62.0, z: 65.0,
+        era: "تراث الغوص على اللؤلؤ وصناعة السفن البحرية",
+        question: "سؤال المحطة 10: ماذا كان يطلق الكويتيون قديماً على المغاصات البحرية الغنية باللؤلؤ في مياه الخليج العربي؟",
+        options: ["الهيرات", "الخباري", "القلبان", "الفيضات"],
+        correct: 0,
+        explanation: "'الهيرات' هي مروج ومغاصات المحار في قاع بحر الخليج العربي، واشتهر الساحل الجنوبي وقرب الخيران برحلات الغوص الكبرى على اللؤلؤ التي جسدت شجاعة وكفاح أجدادنا البحارة والنواخذة."
+      }
+    ];
+
+    const RANKS = [
+      "🌊 بحّار مستكشف",
+      "🤿 غوّاص اللؤلؤ",
+      "⚓ سكّوني السفينة",
+      "📜 باحث تاريخي",
+      "🏛 حارس الأسوار",
+      "⚔️ بطل كاظمة",
+      "🏰 حامي الحمى",
+      "🛢️ رائد النهضة",
+      "🌉 باني الجسور",
+      "👑 نوخذة الكويت الكبير"
+    ];
+
+    // =========================================================================
+    // 3) محرك الصوت التوليدي الداخلي التراثي (Web Audio API - يعمل دون نت 100%)
+    // أصوات عود تراثية ونغمات احتفالية فلكلورية محاكية للآلات الكويتية الأصيلة
+    // =========================================================================
+    class HeritageAudio {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      // محاكاة نقرة وتر العود الكويتي الأصيل مع رنين الصندوق الخشبي
+      playOudPluck(freq, timeOffset = 0, duration = 1.0, peakVol = 0.22) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime + timeOffset;
+
+        // مذبذب النغمة الأساسية (Sine) ومذبذب التوافقات الخشبية (Triangle)
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const gainNode = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(freq, now);
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(freq * 2.01, now); // الهارموني الثاني للوتر
+
+        // فلتر استجابة رنين الصندوق الخشبي (Low-pass)
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(freq * 3.5, now);
+        filter.frequency.exponentialRampToValueAtTime(120, now + duration);
+
+        gainNode.gain.setValueAtTime(0.001, now);
+        gainNode.gain.linearRampToValueAtTime(peakVol, now + 0.015); // نقرة الريشة (Pluck attack)
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.ctx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + duration + 0.05);
+        osc2.stop(now + duration + 0.05);
+      }
+
+      play(freqs, times, decay = 8, type = 'sine') {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        freqs.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(f, now + times[idx]);
+          gain.gain.setValueAtTime(0.18, now + times[idx]);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + times[idx] + (1 / decay));
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + times[idx]);
+          osc.stop(now + times[idx] + (1 / decay) + 0.1);
+        });
+      }
+
+      click() {
+        this.playOudPluck(440, 0, 0.15, 0.12);
+      }
+
+      correct() {
+        // نغمات عود بهيجة متتالية (مقام راست كويتي فرح)
+        const notes = [392.00, 440.00, 493.88, 587.33, 783.99]; // G4, A4, B4, D5, G5
+        notes.forEach((f, i) => this.playOudPluck(f, i * 0.08, 0.85, 0.20));
+      }
+
+      wrong() {
+        // نغمة خشبية رقيقة هادئة بدلاً من الطنين المزعج
+        this.playOudPluck(220, 0, 0.35, 0.15);
+        this.playOudPluck(196, 0.12, 0.45, 0.15);
+      }
+
+      flagRaise() {
+        // نغمة رفع العلم الفلكلورية الكويتية
+        const notes = [440, 554.37, 659.25, 880, 1108.73];
+        notes.forEach((f, i) => this.playOudPluck(f, i * 0.07, 0.9, 0.22));
+      }
+
+      laserTrail() {
+        // خطو المسير والانطلاق
+        const steps = [293.66, 329.63, 369.99, 440.00];
+        steps.forEach((f, i) => this.playOudPluck(f, i * 0.06, 0.45, 0.14));
+      }
+
+      victory() {
+        // مقطوعة النصر التراثية الكبرى (Fanfare Arpeggio)
+        const melody = [
+          { f: 523.25, t: 0.00 },
+          { f: 659.25, t: 0.12 },
+          { f: 783.99, t: 0.24 },
+          { f: 1046.50, t: 0.38 },
+          { f: 880.00, t: 0.52 },
+          { f: 1046.50, t: 0.66 },
+          { f: 1318.51, t: 0.82 },
+          { f: 1567.98, t: 1.05 }
+        ];
+        melody.forEach(n => this.playOudPluck(n.f, n.t, 1.4, 0.25));
+      }
+    }
+    const audio = new HeritageAudio();
+
+    // =========================================================================
+    // 4) حالة اللعبة وحفظ التقدم
+    // =========================================================================
+    let gameState = {
+      currentStopId: 1,
+      completedStops: [],
+      startTime: Date.now(),
+      timerInterval: null
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem('kuwait_3d_state_v7');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          gameState.completedStops = parsed.completedStops || [];
+          gameState.currentStopId = Math.min(10, (gameState.completedStops.length > 0 ? Math.max(...gameState.completedStops) + 1 : 1));
+        }
+      } catch(e) {}
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('kuwait_3d_state_v7', JSON.stringify({
+          completedStops: gameState.completedStops
+        }));
+      } catch(e) {}
+    }
+
+    // =========================================================================
+    // 5) محرك Three.js الخريطة ثلاثية الأبعاد 3D ونماذج السفن الحقيقية GLB
+    // =========================================================================
+    let scene, camera, renderer, controls;
+    let stopObjects = {};
+    let connectingTrails = [];
+    let seaWaterMesh, seaWaterGeo;
+    let kuwaitTowersGroup, causewayMesh;
+    let maritimeFleet = []; // أسطول السفن ثلاثية الأبعاد الحقيقية
+    let cameraTween = null;
+    let activeVoyageBoat = null;
+    let currentJourney = null;
+    let currentTravelerMesh = null; // المجسم الحالي لمركبة/قارب السفر لمنع أي بقاء عالق
+    let travelerMixer = null; // مشغل انميشن حركة الجمل
+    let lastAnimTime = performance.now();
+    let selectedVehicleType = localStorage.getItem('kuwait_selected_vehicle') || 'camel';
+    let skyDomeMesh = null;
+    let sunHaloMesh = null;
+    let cloudsList = [];
+    let driftingCloudsGroup = null;
+    let coastalFoamMesh = null;
+    let coastalFoamMat = null;
+    let isFreeCamActive = true; // مفعل افتراضياً لتوفير الكاميرا الحرة ومحدد الإحداثيات فوراً
+    let savedCustomStopCoords = {};
+
+    function init3D() {
+      const canvas = document.getElementById('webgl-canvas');
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      // 1. Scene & Warm Atmospheric Horizon Fog
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xE0A364);
+      // ضباب شفق ذهبي دافئ يتلاشى بسلاسة في الأفق ويدمج اليابسة والبحر مع السماء
+      scene.fog = new THREE.Fog(0xE0A364, 160, 720);
+
+      // 2. Camera
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 2500);
+      camera.position.set(10, 165, 135);
+      camera.lookAt(10, 0, 0);
+
+      // 3. Renderer
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      if (renderer.toneMapping) {
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.92; // الحفاظ على دفء وتدرج ألوان الرمال الذهبية والبيئة الكويتية
+      }
+
+      // 4. OrbitControls - كاميرا حرة بالكامل تتيح التحريك والتدوير والتقريب
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.screenSpacePanning = true; // يسمح بالتحريك الحر الطبيعي للشاشة بالزر الأيمن أو اللمس
+      controls.enablePan = true;
+      controls.maxPolarAngle = Math.PI - 0.02; // حرية كاملة للنظر للأعلى والأسفل دون تقييد
+      controls.minPolarAngle = 0.02;
+      controls.minDistance = 0.5;
+      controls.maxDistance = 600;
+      controls.target.set(10, 2.0, 0);
+
+      window.scene = scene;
+      window.camera = camera;
+      window.controls = controls;
+      window.stopObjects = stopObjects;
+      window.viewFocusStop = viewFocusStop;
+
+      // 5. Lighting - إضاءة شفقية ذهبية دافئة وطبيعية متوازنة تمنع التبييض
+      const ambientLight = new THREE.AmbientLight(0xFFE5CC, 0.45);
+      scene.add(ambientLight);
+
+      // ضوء هيميسفير: زرقة السماء المعتدلة من الأعلى وانعكاس رمال الصحراء من الأسفل
+      const hemiLight = new THREE.HemisphereLight(0x5694B8, 0xD48F52, 0.48);
+      scene.add(hemiLight);
+
+      // ضوء شمس شفقية مائل يرسل أشعة ذهبية دافئة وظلالاً طبيعية
+      const sunLight = new THREE.DirectionalLight(0xFFE8C2, 0.92);
+      sunLight.position.set(-190, 150, -150);
+      sunLight.target.position.set(25, 0, 0);
+      scene.add(sunLight.target);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 10;
+      sunLight.shadow.camera.far = 480;
+      sunLight.shadow.camera.left = -160;
+      sunLight.shadow.camera.right = 160;
+      sunLight.shadow.camera.top = 160;
+      sunLight.shadow.camera.bottom = -160;
+      scene.add(sunLight);
+
+      // ضوء ملء خفيف وناعم جداً من الجهة المقابلة لمنع الظلال المعتمة دون تبييض الأرض أو السيارات
+      const fillLight = new THREE.DirectionalLight(0xFFEEDD, 0.22);
+      fillLight.position.set(160, 100, 140);
+      fillLight.target.position.set(25, 0, 0);
+      scene.add(fillLight.target);
+      scene.add(fillLight);
+
+      // 5.5 بناء قبة السماء البانورامية وقرص الشمس المتوهج
+      buildPanoramicSkyDome();
+
+      // 5.6 بناء السحب ثلاثية الأبعاد الحية المتحركة في الأفق
+      build3DDriftingClouds();
+
+      // 5.7 بناء الإطار الخشبي التراثي الفاخر للوحة الخريطة (Wooden Frame & Archival Mat)
+      buildWoodenMapFrame();
+
+      // 6. بناء مياه البحر والخليج العربي الواقعية المتدرجة طبوغرافياً (Stepped Bathymetric Ocean)
+      buildEnhancedOceanSea3D();
+
+      // 6.5 بناء رغوة وزبد الشاطئ التفاعلي على سواحل وجزر الكويت
+      buildCoastalFoamLine();
+
+      // 7. بناء يابسة وتضاريس الكويت وجزرها بدقة جغرافية عالية
+      buildKuwaitLandmass();
+
+      // 8. نماذج المعالم الكويتية المطورة (معطلة مؤقتاً بطلب المستخدم)
+      // buildEnhancedKuwaitTowers3D();
+      // buildEnhancedCableStayedCauseway3D();
+
+      // 9. تحميل نماذج السفن الجديدة GLB الحقيقية فقط (تمت إزالة النماذج القديمة بالكامل)
+      loadUserGLBShips();
+
+      // 10. إنشاء محطات التحدي العشر الموزعة
+      buildHistoricalStops3D();
+
+      // 12. تفاعل النقر على المحطات
+      setup3DRaycasting(canvas);
+
+      // 13. تحديث الحجم
+      window.addEventListener('resize', onWindowResize);
+
+      // 14. حلقة التحريك
+      animate();
+    }
+
+    // =========================================================================
+    // قبة السماء البانورامية الشفقية والسحب ثلاثية الأبعاد الحية
+    // =========================================================================
+    function createSkyDomeTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      // تدرج لوني عمودي متقن يحاكي شفق وسماء الكويت الذهبية
+      const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+      grad.addColorStop(0.0, '#103F5E'); // زرقة السماء الملكية في كبد السماء
+      grad.addColorStop(0.24, '#1B5B7D'); // أزرق كويتي ساحلي
+      grad.addColorStop(0.48, '#3A7C93'); // تدرج فيروزي ناعم
+      grad.addColorStop(0.66, '#967C6A'); // مسحة شفق دافئة
+      grad.addColorStop(0.76, '#D6894D'); // حمرة الشفق الذهبي المتألق فوق الأفق
+      grad.addColorStop(0.82, '#E0A364'); // خط الأفق الذهبي الدافئ
+      grad.addColorStop(0.88, '#B87848'); // ضباب أفق الصحراء والبحر
+      grad.addColorStop(1.0, '#092B3B'); // مياه الخليج العميقة تحت خط الأفق
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // هالة ضوئية دافئة للشمس المشرقة في الغرب
+      const sunGlow = ctx.createRadialGradient(280, 840, 10, 280, 840, 320);
+      sunGlow.addColorStop(0, 'rgba(255, 245, 215, 0.95)');
+      sunGlow.addColorStop(0.2, 'rgba(255, 210, 135, 0.6)');
+      sunGlow.addColorStop(0.5, 'rgba(235, 155, 75, 0.22)');
+      sunGlow.addColorStop(1, 'rgba(235, 155, 75, 0.0)');
+
+      ctx.fillStyle = sunGlow;
+      ctx.fillRect(0, 520, 1024, 504);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    }
+
+    function buildPanoramicSkyDome() {
+      const skyGeo = new THREE.SphereGeometry(1400, 48, 32);
+      const skyTex = createSkyDomeTexture();
+      const skyMat = new THREE.MeshBasicMaterial({
+        map: skyTex,
+        side: THREE.BackSide,
+        depthWrite: false
+      });
+      skyDomeMesh = new THREE.Mesh(skyGeo, skyMat);
+      scene.add(skyDomeMesh);
+
+      // قرص شمس ثلاثي الأبعاد مشرق في الأفق الغربي
+      const sunGroup = new THREE.Group();
+      sunGroup.position.set(-220, 115, -180);
+
+      const sunCoreGeo = new THREE.SphereGeometry(26, 24, 24);
+      const sunCoreMat = new THREE.MeshBasicMaterial({ color: 0xFFFBE8 });
+      const sunCore = new THREE.Mesh(sunCoreGeo, sunCoreMat);
+      sunGroup.add(sunCore);
+
+      // هالة إشعاع الشمس الذهبية
+      const haloGeo = new THREE.RingGeometry(26, 75, 32);
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0xF5BA60,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.5
+      });
+      sunHaloMesh = new THREE.Mesh(haloGeo, haloMat);
+      sunGroup.add(sunHaloMesh);
+
+      scene.add(sunGroup);
+    }
+
+    function createCloudCluster(puffCount, baseWidth, baseDepth) {
+      const cloud = new THREE.Group();
+      const cloudMat = new THREE.MeshLambertMaterial({
+        color: 0xFFFAF2,
+        transparent: true,
+        opacity: 0.88,
+        depthWrite: false
+      });
+
+      for (let i = 0; i < puffCount; i++) {
+        const radius = (baseWidth * 0.16) + Math.random() * (baseWidth * 0.14);
+        const puffGeo = new THREE.SphereGeometry(radius, 10, 8);
+        const puff = new THREE.Mesh(puffGeo, cloudMat);
+
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * (baseWidth * 0.42);
+        const px = Math.cos(angle) * dist;
+        const pz = Math.sin(angle) * (baseDepth * 0.42);
+        const py = (Math.random() - 0.4) * (radius * 0.45);
+
+        puff.position.set(px, py, pz);
+        puff.scale.set(1.2, 0.54, 1.0);
+        cloud.add(puff);
+      }
+
+      return cloud;
+    }
+
+    function build3DDriftingClouds() {
+      driftingCloudsGroup = new THREE.Group();
+      driftingCloudsGroup.name = 'DriftingClouds';
+      cloudsList = [];
+
+      const cloudSpawns = [
+        // سحب عالية وضخمة تغطي المشهد العام
+        { x: -180, y: 88, z: -120, puffs: 10, w: 52, d: 30, speedX: 0.045, speedZ: 0.012 },
+        { x: -50,  y: 94, z: -210, puffs: 12, w: 58, d: 34, speedX: 0.040, speedZ: 0.010 },
+        { x: 120,  y: 89, z: -160, puffs: 9,  w: 45, d: 26, speedX: 0.050, speedZ: 0.015 },
+        { x: 240,  y: 96, z: -90,  puffs: 11, w: 54, d: 32, speedX: 0.042, speedZ: 0.011 },
+        { x: -220, y: 84, z: 40,   puffs: 10, w: 48, d: 28, speedX: 0.048, speedZ: 0.014 },
+        { x: -80,  y: 92, z: 90,   puffs: 13, w: 62, d: 36, speedX: 0.038, speedZ: 0.009 },
+        { x: 80,   y: 87, z: 60,   puffs: 8,  w: 40, d: 24, speedX: 0.052, speedZ: 0.016 },
+        { x: 210,  y: 93, z: 120,  puffs: 11, w: 55, d: 30, speedX: 0.044, speedZ: 0.012 },
+        // سحب متوسطة الارتفاع قريبة من خط الأفق لتعطي بعداً وعمقاً للمحطات
+        { x: -140, y: 74, z: -40,  puffs: 8,  w: 38, d: 22, speedX: 0.055, speedZ: 0.018 },
+        { x: 30,   y: 77, z: -80,  puffs: 9,  w: 42, d: 24, speedX: 0.050, speedZ: 0.015 },
+        { x: 170,  y: 72, z: -10,  puffs: 7,  w: 34, d: 20, speedX: 0.058, speedZ: 0.020 },
+        { x: -30,  y: 75, z: 160,  puffs: 10, w: 46, d: 26, speedX: 0.046, speedZ: 0.013 },
+        { x: 130,  y: 78, z: 190,  puffs: 8,  w: 38, d: 22, speedX: 0.051, speedZ: 0.016 },
+        // سحب أفق بعيدة ممتدة
+        { x: -280, y: 100, z: -260, puffs: 13, w: 72, d: 42, speedX: 0.035, speedZ: 0.008 },
+        { x: 280,  y: 96,  z: -240, puffs: 12, w: 65, d: 38, speedX: 0.039, speedZ: 0.010 },
+        { x: -260, y: 94,  z: 220,  puffs: 11, w: 58, d: 34, speedX: 0.041, speedZ: 0.011 },
+        { x: 260,  y: 98,  z: 250,  puffs: 13, w: 68, d: 40, speedX: 0.037, speedZ: 0.009 }
+      ];
+
+      cloudSpawns.forEach((cfg, idx) => {
+        const cloud = createCloudCluster(cfg.puffs, cfg.w, cfg.d);
+        cloud.position.set(cfg.x, cfg.y, cfg.z);
+        cloud.userData = {
+          speedX: cfg.speedX,
+          speedZ: cfg.speedZ,
+          baseY: cfg.y,
+          phase: idx * 0.75
+        };
+        driftingCloudsGroup.add(cloud);
+        cloudsList.push(cloud);
+      });
+
+      scene.add(driftingCloudsGroup);
+    }
+
+    function updateDriftingClouds(time) {
+      cloudsList.forEach(cloud => {
+        const ud = cloud.userData;
+        cloud.position.x += ud.speedX;
+        cloud.position.z += ud.speedZ;
+        cloud.position.y = ud.baseY + Math.sin(time * 0.35 + ud.phase) * 0.7;
+
+        if (cloud.position.x > 360) cloud.position.x = -360;
+        if (cloud.position.z > 340) cloud.position.z = -340;
+      });
+    }
+
+    // =========================================================================
+    // نسيج تدرجات أعماق البحر الطبوغرافية الحقيقية (Stepped Bathymetric Ocean)
+    // =========================================================================
+    function createSteppedBathymetricOceanTexture() {
+      const size = 2048;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      function toCanvasX(x) {
+        return ((x - (-126)) / 252) * size;
+      }
+      function toCanvasY(z) {
+        return ((z - (-116)) / 232) * size;
+      }
+
+      // 1. أرضية الكانفاس والورق المعتق لمناطق اليابسة المجاورة للكويت
+      ctx.fillStyle = '#EFE6D6';
+      ctx.fillRect(0, 0, size, size);
+
+      // نسيج ألياف الكانفاس الطبيعي
+      ctx.fillStyle = 'rgba(160, 130, 95, 0.035)';
+      for (let i = 0; i < 35000; i++) {
+        ctx.fillRect(Math.random() * size, Math.random() * size, 2, 2);
+      }
+
+      // 2. الطبقة 4: أزرق نيلي ليلي عميق (#062A3B) - قاع الخليج العربي المفتوح
+      ctx.fillStyle = '#062A3B';
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(96), toCanvasY(-116));
+      ctx.lineTo(toCanvasX(126), toCanvasY(-116));
+      ctx.lineTo(toCanvasX(126), toCanvasY(116));
+      ctx.lineTo(toCanvasX(112), toCanvasY(116));
+      ctx.bezierCurveTo(toCanvasX(106), toCanvasY(70), toCanvasX(100), toCanvasY(15), toCanvasX(96), toCanvasY(-40));
+      ctx.bezierCurveTo(toCanvasX(94), toCanvasY(-70), toCanvasX(95), toCanvasY(-95), toCanvasX(96), toCanvasY(-116));
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. الطبقة 3: أزرق بحري متوسط (#0B5D78) - مياه الخليج الإقليمية العميقة
+      ctx.fillStyle = '#0B5D78';
+      ctx.strokeStyle = '#041C28';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(80), toCanvasY(-116));
+      ctx.lineTo(toCanvasX(96), toCanvasY(-116));
+      ctx.bezierCurveTo(toCanvasX(95), toCanvasY(-95), toCanvasX(94), toCanvasY(-70), toCanvasX(96), toCanvasY(-40));
+      ctx.bezierCurveTo(toCanvasX(100), toCanvasY(15), toCanvasX(106), toCanvasY(70), toCanvasX(112), toCanvasY(116));
+      ctx.lineTo(toCanvasX(100), toCanvasY(116));
+      ctx.bezierCurveTo(toCanvasX(94), toCanvasY(70), toCanvasX(86), toCanvasY(15), toCanvasX(84), toCanvasY(-30));
+      ctx.bezierCurveTo(toCanvasX(82), toCanvasY(-65), toCanvasX(81), toCanvasY(-90), toCanvasX(80), toCanvasY(-116));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 4. الطبقة 2: أزرق سماوي مخضر (#169CA0) - الجرف الساحلي الأوسط
+      ctx.fillStyle = '#169CA0';
+      ctx.strokeStyle = '#041C28';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(66), toCanvasY(-116));
+      ctx.lineTo(toCanvasX(80), toCanvasY(-116));
+      ctx.bezierCurveTo(toCanvasX(81), toCanvasY(-90), toCanvasX(82), toCanvasY(-65), toCanvasX(84), toCanvasY(-30));
+      ctx.bezierCurveTo(toCanvasX(86), toCanvasY(15), toCanvasX(94), toCanvasY(70), toCanvasX(100), toCanvasY(116));
+      ctx.lineTo(toCanvasX(88), toCanvasY(116));
+      ctx.bezierCurveTo(toCanvasX(84), toCanvasY(75), toCanvasX(74), toCanvasY(25), toCanvasX(72), toCanvasY(-10));
+      ctx.bezierCurveTo(toCanvasX(70), toCanvasY(-40), toCanvasX(68), toCanvasY(-80), toCanvasX(66), toCanvasY(-116));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 5. الطبقة 1: فيروزي شاطئي ناصع (#32D1B8) - مياه جون الكويت والشواطئ الضحلة
+      ctx.fillStyle = '#32D1B8';
+      ctx.strokeStyle = '#041C28';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(46), toCanvasY(-116));
+      ctx.lineTo(toCanvasX(66), toCanvasY(-116));
+      ctx.bezierCurveTo(toCanvasX(68), toCanvasY(-80), toCanvasX(70), toCanvasY(-40), toCanvasX(72), toCanvasY(-10));
+      ctx.bezierCurveTo(toCanvasX(74), toCanvasY(25), toCanvasX(84), toCanvasY(75), toCanvasX(88), toCanvasY(116));
+      ctx.lineTo(toCanvasX(78), toCanvasY(116));
+      // التواء الساحل الجنوبي نحو النويصيب والخيران
+      ctx.bezierCurveTo(toCanvasX(76), toCanvasY(80), toCanvasX(72), toCanvasY(55), toCanvasX(64), toCanvasY(25));
+      ctx.bezierCurveTo(toCanvasX(60), toCanvasY(8), toCanvasX(56), toCanvasY(-2), toCanvasX(52), toCanvasY(-4));
+      // جون الكويت: يدخل غرباً نحو الدوحة والجهراء وكاظمة
+      ctx.bezierCurveTo(toCanvasX(40), toCanvasY(-8), toCanvasX(24), toCanvasY(-12), toCanvasX(22), toCanvasY(-16));
+      ctx.bezierCurveTo(toCanvasX(22), toCanvasY(-24), toCanvasX(42), toCanvasY(-25), toCanvasX(58), toCanvasY(-28));
+      // شمال الجون والصبية وخور الصبية
+      ctx.bezierCurveTo(toCanvasX(54), toCanvasY(-50), toCanvasX(48), toCanvasY(-80), toCanvasX(46), toCanvasY(-116));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // رصيف وشعاب جزيرة فيلكا التاريخية
+      ctx.beginPath();
+      ctx.arc(toCanvasX(81), toCanvasY(-14), 48, 0, Math.PI * 2);
+      ctx.fillStyle = '#32D1B8';
+      ctx.fill();
+      ctx.strokeStyle = '#041C28';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 6. برواز هوامش اللوحة الأرشيفية المزدوج (Double Margin Fillet)
+      ctx.strokeStyle = 'rgba(92, 60, 32, 0.45)';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(32, 32, size - 64, size - 64);
+      ctx.strokeStyle = 'rgba(212, 175, 55, 0.70)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(42, 42, size - 84, size - 84);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // =========================================================================
+    // الإطار الخشبي الفاخر للوحة الخريطة (Wooden Picture Frame & Mat Board)
+    // =========================================================================
+    function buildWoodenMapFrame() {
+      const frameGroup = new THREE.Group();
+      frameGroup.name = 'WoodenMapFrame';
+
+      // توليد تيكستشر خشب الجوز المعتق المحفور
+      const wCanvas = document.createElement('canvas');
+      wCanvas.width = 1024;
+      wCanvas.height = 256;
+      const wc = wCanvas.getContext('2d');
+      const wImg = wc.createImageData(1024, 256);
+      const wd = wImg.data;
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 1024; x++) {
+          const p = (y * 1024 + x) * 4;
+          const grain = Math.sin(y * 0.45 + Math.sin(x * 0.02) * 5.0) * 0.5 + 0.5;
+          const fine = Math.sin(y * 1.8 + x * 0.05) * 0.15;
+          const v = grain * 0.85 + fine;
+          const r = 40 + v * 32;
+          const g = 20 + v * 20;
+          const b = 9 + v * 12;
+          wd[p] = Math.min(255, Math.max(0, r));
+          wd[p + 1] = Math.min(255, Math.max(0, g));
+          wd[p + 2] = Math.min(255, Math.max(0, b));
+          wd[p + 3] = 255;
+        }
+      }
+      wc.putImageData(wImg, 0, 0);
+      const woodTex = new THREE.CanvasTexture(wCanvas);
+      woodTex.wrapS = THREE.RepeatWrapping;
+      woodTex.wrapT = THREE.RepeatWrapping;
+      woodTex.repeat.set(4, 1);
+
+      const woodMat = new THREE.MeshStandardMaterial({
+        map: woodTex,
+        color: 0x482413,
+        roughness: 0.48,
+        metalness: 0.08
+      });
+
+      const goldMat = new THREE.MeshStandardMaterial({
+        color: 0xD4AF37,
+        roughness: 0.28,
+        metalness: 0.85
+      });
+
+      // أبعاد فتحة الإطار: [-126, 126] × [-116, 116] (العرض 252، العمق 232)
+      const beamW = 14;
+      const beamH = 5.6;
+      const totalW = 252 + beamW * 2; // 280
+      const totalD = 232 + beamW * 2; // 260
+
+      // 1. العارضة الشمالية
+      const nGeo = new THREE.BoxGeometry(totalW, beamH, beamW);
+      const nBeam = new THREE.Mesh(nGeo, woodMat);
+      nBeam.position.set(0, beamH / 2, -116 - beamW / 2);
+      nBeam.castShadow = true;
+      nBeam.receiveShadow = true;
+      frameGroup.add(nBeam);
+
+      // 2. العارضة الجنوبية
+      const sGeo = new THREE.BoxGeometry(totalW, beamH, beamW);
+      const sBeam = new THREE.Mesh(sGeo, woodMat);
+      sBeam.position.set(0, beamH / 2, 116 + beamW / 2);
+      sBeam.castShadow = true;
+      sBeam.receiveShadow = true;
+      frameGroup.add(sBeam);
+
+      // 3. العارضة الغربية
+      const wGeo = new THREE.BoxGeometry(beamW, beamH, 232);
+      const wBeam = new THREE.Mesh(wGeo, woodMat);
+      wBeam.position.set(-126 - beamW / 2, beamH / 2, 0);
+      wBeam.castShadow = true;
+      wBeam.receiveShadow = true;
+      frameGroup.add(wBeam);
+
+      // 4. العارضة الشرقية
+      const eGeo = new THREE.BoxGeometry(beamW, beamH, 232);
+      const eBeam = new THREE.Mesh(eGeo, woodMat);
+      eBeam.position.set(126 + beamW / 2, beamH / 2, 0);
+      eBeam.castShadow = true;
+      eBeam.receiveShadow = true;
+      frameGroup.add(eBeam);
+
+      // 5. الحلية الذهبية الداخلية المحيطة باللوحة (Inner Gold Fillet)
+      const trimW = 1.0;
+      const trimH = 0.8;
+      const trimY = 2.6;
+
+      const nTrim = new THREE.Mesh(new THREE.BoxGeometry(252, trimH, trimW), goldMat);
+      nTrim.position.set(0, trimY, -116 + trimW / 2);
+      frameGroup.add(nTrim);
+
+      const sTrim = new THREE.Mesh(new THREE.BoxGeometry(252, trimH, trimW), goldMat);
+      sTrim.position.set(0, trimY, 116 - trimW / 2);
+      frameGroup.add(sTrim);
+
+      const wTrim = new THREE.Mesh(new THREE.BoxGeometry(trimW, trimH, 232), goldMat);
+      wTrim.position.set(-126 + trimW / 2, trimY, 0);
+      frameGroup.add(wTrim);
+
+      const eTrim = new THREE.Mesh(new THREE.BoxGeometry(trimW, trimH, 232), goldMat);
+      eTrim.position.set(126 - trimW / 2, trimY, 0);
+      frameGroup.add(eTrim);
+
+      // 6. أرضية الكانفاس والورق المعتق الحامل (Mat Board)
+      const matGeo = new THREE.PlaneGeometry(254, 234);
+      const matMat = new THREE.MeshStandardMaterial({
+        color: 0xEFE6D6,
+        roughness: 0.95,
+        metalness: 0.0
+      });
+      const matMesh = new THREE.Mesh(matGeo, matMat);
+      matMesh.rotation.x = -Math.PI / 2;
+      matMesh.position.y = 0.01;
+      matMesh.receiveShadow = true;
+      frameGroup.add(matMesh);
+
+      scene.add(frameGroup);
+    }
+
+    // =========================================================================
+    // بناء البحر والمياه الواقعية 3D متدرجة الأعماق
+    // =========================================================================
+    function buildEnhancedOceanSea3D() {
+      const oceanTex = createSteppedBathymetricOceanTexture();
+
+      seaWaterGeo = new THREE.PlaneGeometry(252, 232, 64, 64);
+
+      const seaMat = new THREE.MeshStandardMaterial({
+        map: oceanTex,
+        roughness: 0.32,
+        metalness: 0.08,
+        transparent: true,
+        opacity: 0.98
+      });
+      seaWaterMesh = new THREE.Mesh(seaWaterGeo, seaMat);
+      seaWaterMesh.rotation.x = -Math.PI / 2;
+      seaWaterMesh.position.y = 0.04;
+      seaWaterMesh.receiveShadow = true;
+      scene.add(seaWaterMesh);
+    }
+
+    function updateOceanWaves(time) {
+      if (!seaWaterGeo) return;
+      const pos = seaWaterGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const wave = Math.sin(x * 0.04 + time * 1.2) * 0.08 +
+                     Math.cos(y * 0.05 + time * 1.4) * 0.06;
+        pos.setZ(i, wave);
+      }
+      pos.needsUpdate = true;
+      seaWaterGeo.computeVertexNormals();
+    }
+
+    // =========================================================================
+    // رغوة وزبد الشاطئ التفاعلي على سواحل وجزر الكويت (Coastal Foam Line)
+    // =========================================================================
+    function buildCoastalFoamLine() {
+      const positions = [];
+      const uvs = [];
+      const indices = [];
+      let vertOffset = 0;
+
+      function addFoamSegment(pts, isClosed = true, foamWidth = 2.4) {
+        const count = pts.length;
+        if (count < 3) return;
+        let accumulatedDist = 0;
+
+        for (let i = 0; i < count; i++) {
+          const prev = pts[(i - 1 + count) % count];
+          const curr = pts[i];
+          const next = pts[(i + 1) % count];
+
+          const tx = next[0] - prev[0];
+          const tz = next[1] - prev[1];
+          const len = Math.hypot(tx, tz);
+          if (len < 0.001) continue;
+
+          // الاتجاه العمودي الخارجي نحو مياه البحر (-tz, tx)
+          const nx = -tz / len;
+          const nz = tx / len;
+
+          // الرأس الداخلي ملامس لرمال الشاطئ
+          const innerX = curr[0] + nx * 0.12;
+          const innerZ = curr[1] + nz * 0.12;
+
+          // الرأس الخارجي ممتد داخل مياه البحر
+          const outerX = curr[0] + nx * foamWidth;
+          const outerZ = curr[1] + nz * foamWidth;
+
+          const y = 0.06;
+
+          positions.push(innerX, y, innerZ);
+          positions.push(outerX, y, outerZ);
+
+          if (i > 0) {
+            const segLen = Math.hypot(curr[0] - pts[i - 1][0], curr[1] - pts[i - 1][1]);
+            accumulatedDist += segLen;
+          }
+
+          uvs.push(accumulatedDist * 0.35, 0.0);
+          uvs.push(accumulatedDist * 0.35, 1.0);
+        }
+
+        const numVerts = (positions.length / 3) - vertOffset;
+        const numPairs = numVerts / 2;
+        for (let j = 0; j < numPairs - 1; j++) {
+          const v0 = vertOffset + j * 2;
+          const v1 = v0 + 1;
+          const v2 = v0 + 2;
+          const v3 = v0 + 3;
+          indices.push(v0, v1, v2);
+          indices.push(v2, v1, v3);
+        }
+        if (isClosed && numPairs > 2) {
+          const lastIdx = vertOffset + (numPairs - 1) * 2;
+          const firstIdx = vertOffset;
+          indices.push(lastIdx, lastIdx + 1, firstIdx);
+          indices.push(firstIdx, lastIdx + 1, firstIdx + 1);
+        }
+        vertOffset = positions.length / 3;
+      }
+
+      // 1. الشريط الساحلي لليابسة الكويتية الرئيسية من النويصيب جنوباً حتى الصبية وشمال الجون
+      if (KUWAIT_3D_POLYGONS[13] && KUWAIT_3D_POLYGONS[13].length > 740) {
+        const mainlandCoast = KUWAIT_3D_POLYGONS[13].slice(80, 742);
+        addFoamSegment(mainlandCoast, false, 2.5);
+      }
+
+      // 2. سواحل كافة جزر الكويت (فيلكا، بوبيان، وربة، مسكان، عوهة، كبر، قاروه، أم المرادم...)
+      KUWAIT_3D_POLYGONS.forEach((polyPoints, idx) => {
+        if (idx !== 13 && polyPoints.length >= 3) {
+          const width = (idx === 11) ? 2.6 : 2.0;
+          addFoamSegment(polyPoints, true, width);
+        }
+      });
+
+      const foamGeo = new THREE.BufferGeometry();
+      foamGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      foamGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      foamGeo.setIndex(indices);
+      foamGeo.computeVertexNormals();
+
+      coastalFoamMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 }
+        },
+        vertexShader: `
+          uniform float uTime;
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+
+          void main() {
+            vUv = uv;
+            vec3 pos = position;
+            // تموجات رأسية تتطابق مع نبض أمواج البحر
+            float wave = sin(pos.x * 0.028 + uTime * 1.5) * 0.22 +
+                         cos(pos.z * 0.038 + uTime * 1.8) * 0.18;
+            pos.y += wave;
+            vWorldPos = (modelMatrix * vec4(pos, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          varying vec2 vUv;
+          varying vec3 vWorldPos;
+
+          void main() {
+            float shore = vUv.y; // 0.0 عند حافة الرمل، 1.0 في البحر
+
+            // نبض أمواج الزبد التدريجي (اندفاع وانحسار الأمواج على الشاطئ)
+            float waveCycle1 = sin(uTime * 2.3 - vUv.x * 0.45) * 0.5 + 0.5;
+            float waveCycle2 = cos(uTime * 1.7 + vUv.x * 0.3) * 0.5 + 0.5;
+            float wash = mix(waveCycle1, waveCycle2, 0.4);
+
+            // خط رغوة متوهج ينبض ويزحف على الشاطئ
+            float foamWave = smoothstep(0.96, 0.04, shore + (wash - 0.5) * 0.42);
+
+            // نسيج فقاعات وزبد البحر الصغير
+            float froth = sin(vUv.x * 6.5 + uTime * 2.2) * cos(shore * 10.0 + uTime * 1.6) * 0.14;
+
+            // لون زبد البحر ناصع البياض مع لمسة فيروزية شاطئية شفافة
+            vec3 foamColor = mix(vec3(0.90, 0.98, 1.0), vec3(1.0, 1.0, 1.0), foamWave);
+
+            // تلاشي ناعم باتجاه البحر المفتوح وحافة الرمل
+            float edgeFade = smoothstep(1.0, 0.45, shore);
+            float alpha = clamp(foamWave + froth, 0.0, 1.0) * edgeFade * 0.88;
+
+            gl_FragColor = vec4(foamColor, alpha);
+          }
+        `,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+
+      coastalFoamMesh = new THREE.Mesh(foamGeo, coastalFoamMat);
+      scene.add(coastalFoamMesh);
+    }
+
+    // =========================================================================
+    // نسيج تضاريس ورمال الصحراء الكويتية البارزة (Procedural Kuwait Sand Dunes)
+    // =========================================================================
+    function createKuwaitSandDunesTextures() {
+      const size = 1024;
+      const colorCanvas = document.createElement('canvas');
+      colorCanvas.width = size;
+      colorCanvas.height = size;
+      const cCtx = colorCanvas.getContext('2d');
+
+      const normalCanvas = document.createElement('canvas');
+      normalCanvas.width = size;
+      normalCanvas.height = size;
+      const nCtx = normalCanvas.getContext('2d');
+
+      const cImgData = cCtx.createImageData(size, size);
+      const nImgData = nCtx.createImageData(size, size);
+      const cData = cImgData.data;
+      const nData = nImgData.data;
+
+      const heightField = new Float32Array(size * size);
+      const angle = 0.65; // ~37° زاوية هبوب رياح الشمال الغربي الصحراوية
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const idx = y * size + x;
+          const u = (x * cosA - y * sinA);
+          const v = (x * sinA + y * cosA);
+
+          // تموجات الكثبان الهلالية المتعرجة الحية
+          const meander = Math.sin(v * 0.022) * 16.0 + Math.sin(v * 0.055 + 1.2) * 7.0;
+          const coord = u + meander;
+
+          // كثبان برخان رئيسية (منحدر لطيف ثم انهيار حاد)
+          const wave1 = Math.sin(coord * 0.035) * 0.5 + 0.5;
+          const d1 = Math.pow(wave1, 1.45);
+
+          // كثبان رملية ثانوية
+          const wave2 = Math.sin(coord * 0.078 + 1.3) * 0.5 + 0.5;
+          const d2 = Math.pow(wave2, 1.8) * 0.32;
+
+          // زعانف وتجاعيد الرياح الدقيقة
+          const rCoord = (u * 1.15 + v * 0.22) * 0.28;
+          const ripples = (Math.sin(rCoord) * 0.5 + 0.5) * 0.12;
+
+          // حبيبات رملية طبيعية
+          const grain = (Math.sin(x * 1.4 + y * 2.8) * Math.cos(x * 2.2 - y * 1.2)) * 0.03;
+
+          const h = Math.min(1.0, Math.max(0.0, d1 * 0.65 + d2 + ripples + grain));
+          heightField[idx] = h;
+        }
+      }
+
+      for (let y = 0; y < size; y++) {
+        const yP = (y - 1 + size) % size;
+        const yN = (y + 1) % size;
+        for (let x = 0; x < size; x++) {
+          const xP = (x - 1 + size) % size;
+          const xN = (x + 1) % size;
+          const pIdx = (y * size + x) * 4;
+          const h = heightField[y * size + x];
+
+          // تدرج ألوان الرمال الذهبية: من قاع المنخفض إلى قمة الكثيب المتوهجة بالشمس
+          let r, g, b;
+          if (h < 0.45) {
+            const t = h / 0.45;
+            r = 196 + (226 - 196) * t;
+            g = 150 + (185 - 150) * t;
+            b = 88 + (122 - 88) * t;
+          } else {
+            const t = (h - 0.45) / 0.55;
+            r = 226 + (251 - 226) * t;
+            g = 185 + (229 - 185) * t;
+            b = 122 + (189 - 122) * t;
+          }
+          const noise = (Math.random() - 0.5) * 6;
+          cData[pIdx] = Math.min(255, Math.max(0, r + noise));
+          cData[pIdx + 1] = Math.min(255, Math.max(0, g + noise));
+          cData[pIdx + 2] = Math.min(255, Math.max(0, b + noise));
+          cData[pIdx + 3] = 255;
+
+          // خريطة النورمال ماب المجسمة
+          const hL = heightField[y * size + xP];
+          const hR = heightField[y * size + xN];
+          const hU = heightField[yP * size + x];
+          const hD = heightField[yN * size + x];
+
+          const nScale = 3.6;
+          const dx = (hR - hL) * nScale;
+          const dy = (hD - hU) * nScale;
+          const dz = 1.0;
+          const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+          nData[pIdx] = Math.floor((-dx / len * 0.5 + 0.5) * 255);
+          nData[pIdx + 1] = Math.floor((-dy / len * 0.5 + 0.5) * 255);
+          nData[pIdx + 2] = Math.floor((dz / len * 0.5 + 0.5) * 255);
+          nData[pIdx + 3] = 255;
+        }
+      }
+      cCtx.putImageData(cImgData, 0, 0);
+      nCtx.putImageData(nImgData, 0, 0);
+
+      const colorTex = new THREE.CanvasTexture(colorCanvas);
+      colorTex.wrapS = THREE.RepeatWrapping;
+      colorTex.wrapT = THREE.RepeatWrapping;
+      colorTex.repeat.set(0.12, 0.12);
+
+      const normTex = new THREE.CanvasTexture(normalCanvas);
+      normTex.wrapS = THREE.RepeatWrapping;
+      normTex.wrapT = THREE.RepeatWrapping;
+      normTex.repeat.set(0.12, 0.12);
+
+      return { colorTex, normTex };
+    }
+
+    function buildKuwaitLandmass() {
+      const landGroup = new THREE.Group();
+      landGroup.name = 'KuwaitLandmass';
+
+      const extrudeSettings = {
+        depth: 2.2,
+        bevelEnabled: true,
+        bevelSegments: 2,
+        steps: 1,
+        bevelSize: 0.35,
+        bevelThickness: 0.35
+      };
+
+      // توليد تيكستشر رمال الصحراء الكويتية البارز والواقعي
+      const { colorTex, normTex } = createKuwaitSandDunesTextures();
+
+      const landMat = new THREE.MeshStandardMaterial({
+        color: 0xFDF4E5,
+        map: colorTex,
+        normalMap: normTex,
+        normalScale: new THREE.Vector2(1.2, 1.2),
+        roughness: 0.92,
+        metalness: 0.0
+      });
+
+      // خامة خطوط الحدود الذهبية المعتقة
+      const borderLineMat = new THREE.LineBasicMaterial({
+        color: 0xD4AF37,
+        linewidth: 2,
+        transparent: true,
+        opacity: 0.92
+      });
+
+      // خامة الشريط الحدودي ثلاثي الأبعاد المحفور (Carved Wood/Bronze Border)
+      const borderRibbonMat = new THREE.MeshStandardMaterial({
+        color: 0x3E220E,
+        roughness: 0.52,
+        metalness: 0.22
+      });
+
+      KUWAIT_3D_POLYGONS.forEach((polyPoints, polyIdx) => {
+        if (polyPoints.length < 3) return;
+
+        const shape = new THREE.Shape();
+        const borderPts = [];
+
+        polyPoints.forEach((pt, i) => {
+          const x = pt[0];
+          const z = pt[1];
+          if (i === 0) shape.moveTo(x, -z);
+          else shape.lineTo(x, -z);
+
+          borderPts.push(new THREE.Vector3(x, 2.45, z));
+        });
+        shape.closePath();
+
+        const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        const mesh = new THREE.Mesh(geom, landMat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        landGroup.add(mesh);
+
+        // خط الحدود الذهبي الأنيق
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(borderPts);
+        const lineMesh = new THREE.Line(lineGeo, borderLineMat);
+        landGroup.add(lineMesh);
+
+        // شريط حدودي ثلاثي الأبعاد بارز ومحفور لليابسة الكويتية الرئيسية وجزيرتي فيلكا وبوبيان
+        if (polyIdx === 13 || polyIdx === 0 || polyIdx === 11) {
+          const ribbonPos = [];
+          const ribbonIndices = [];
+          const count = polyPoints.length;
+          const ribbonWidth = (polyIdx === 13) ? 0.70 : 0.45;
+          const ribbonY = 2.40;
+
+          for (let i = 0; i < count; i++) {
+            const prev = polyPoints[(i - 1 + count) % count];
+            const curr = polyPoints[i];
+            const next = polyPoints[(i + 1) % count];
+
+            const tx = next[0] - prev[0];
+            const tz = next[1] - prev[1];
+            const len = Math.hypot(tx, tz);
+            if (len < 0.0001) continue;
+
+            const nx = -tz / len;
+            const nz = tx / len;
+
+            ribbonPos.push(curr[0] - nx * ribbonWidth * 0.5, ribbonY, curr[1] - nz * ribbonWidth * 0.5);
+            ribbonPos.push(curr[0] + nx * ribbonWidth * 0.5, ribbonY, curr[1] + nz * ribbonWidth * 0.5);
+          }
+
+          const numPairs = (ribbonPos.length / 3) / 2;
+          for (let j = 0; j < numPairs - 1; j++) {
+            const v0 = j * 2;
+            const v1 = v0 + 1;
+            const v2 = v0 + 2;
+            const v3 = v0 + 3;
+            ribbonIndices.push(v0, v1, v2);
+            ribbonIndices.push(v2, v1, v3);
+          }
+          if (numPairs > 2) {
+            const last = (numPairs - 1) * 2;
+            ribbonIndices.push(last, last + 1, 0);
+            ribbonIndices.push(0, last + 1, 1);
+          }
+
+          const rGeo = new THREE.BufferGeometry();
+          rGeo.setAttribute('position', new THREE.Float32BufferAttribute(ribbonPos, 3));
+          rGeo.setIndex(ribbonIndices);
+          rGeo.computeVertexNormals();
+
+          const rMesh = new THREE.Mesh(rGeo, borderRibbonMat);
+          landGroup.add(rMesh);
+        }
+      });
+
+      scene.add(landGroup);
+    }
+
+    function buildEnhancedKuwaitTowers3D() {
+      kuwaitTowersGroup = new THREE.Group();
+      kuwaitTowersGroup.position.set(49.0, 2.3, -8.3);
+
+      const parkGeo = new THREE.CylinderGeometry(4.2, 4.8, 0.4, 24);
+      const parkMat = new THREE.MeshStandardMaterial({ color: 0x1A6038, roughness: 0.9 });
+      const park = new THREE.Mesh(parkGeo, parkMat);
+      park.position.y = 0.2;
+      kuwaitTowersGroup.add(park);
+
+      const mosaicSphereMat = new THREE.MeshStandardMaterial({
+        color: 0x1DAEB8,
+        roughness: 0.15,
+        metalness: 0.85
+      });
+      const concretePylonMat = new THREE.MeshStandardMaterial({
+        color: 0xEAEFEF,
+        roughness: 0.35,
+        metalness: 0.2
+      });
+      const goldRingMat = new THREE.MeshStandardMaterial({
+        color: 0xD4AF37,
+        metalness: 0.9,
+        roughness: 0.2
+      });
+
+      // 1. البرج الرئيسي
+      const t1 = new THREE.Group();
+      const shaft1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.65, 15, 20), concretePylonMat);
+      shaft1.position.y = 7.5;
+      shaft1.castShadow = true;
+      t1.add(shaft1);
+
+      const sphere1A = new THREE.Mesh(new THREE.SphereGeometry(1.4, 28, 28), mosaicSphereMat);
+      sphere1A.position.y = 7.8;
+      sphere1A.castShadow = true;
+      t1.add(sphere1A);
+
+      const ring1 = new THREE.Mesh(new THREE.CylinderGeometry(1.48, 1.48, 0.25, 28), goldRingMat);
+      ring1.position.y = 7.8;
+      t1.add(ring1);
+
+      const sphere1B = new THREE.Mesh(new THREE.SphereGeometry(0.85, 24, 24), mosaicSphereMat);
+      sphere1B.position.y = 11.2;
+      sphere1B.castShadow = true;
+      t1.add(sphere1B);
+
+      const needle1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.1, 4.5, 12), goldRingMat);
+      needle1.position.y = 16.5;
+      t1.add(needle1);
+      kuwaitTowersGroup.add(t1);
+
+      // 2. البرج الأوسط
+      const t2 = new THREE.Group();
+      t2.position.set(-1.2, 0, 0.5);
+      const shaft2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.52, 11.5, 20), concretePylonMat);
+      shaft2.position.y = 5.75;
+      shaft2.castShadow = true;
+      t2.add(shaft2);
+
+      const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(1.15, 24, 24), mosaicSphereMat);
+      sphere2.position.y = 7.2;
+      sphere2.castShadow = true;
+      t2.add(sphere2);
+
+      const needle2 = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.08, 3.2, 12), goldRingMat);
+      needle2.position.y = 12.8;
+      t2.add(needle2);
+      kuwaitTowersGroup.add(t2);
+
+      // 3. البرج الأصغر
+      const t3 = new THREE.Group();
+      t3.position.set(0.9, 0, -0.9);
+      const shaft3 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.4, 8.5, 16), concretePylonMat);
+      shaft3.position.y = 4.25;
+      shaft3.castShadow = true;
+      t3.add(shaft3);
+
+      const beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), new THREE.MeshBasicMaterial({ color: 0xFFE082 }));
+      beaconLight.position.y = 8.5;
+      t3.add(beaconLight);
+      kuwaitTowersGroup.add(t3);
+
+      scene.add(kuwaitTowersGroup);
+    }
+
+    function buildEnhancedCableStayedCauseway3D() {
+      const pStart = new THREE.Vector3(45.5, 0.7, -7.0);
+      const pMid = new THREE.Vector3(51.0, 0.9, -19.0);
+      const pEnd = new THREE.Vector3(59.3, 0.7, -33.65);
+
+      const curve = new THREE.QuadraticBezierCurve3(pStart, pMid, pEnd);
+
+      const tubeGeo = new THREE.TubeGeometry(curve, 36, 0.45, 8, false);
+      const deckMat = new THREE.MeshStandardMaterial({ color: 0xDCDCDC, roughness: 0.35, metalness: 0.3 });
+      causewayMesh = new THREE.Mesh(tubeGeo, deckMat);
+      scene.add(causewayMesh);
+
+      const pts = curve.getPoints(14);
+      pts.forEach(pt => {
+        const pier = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.22, 0.28, pt.y + 0.6, 8),
+          new THREE.MeshStandardMaterial({ color: 0xBBBBBB, roughness: 0.7 })
+        );
+        pier.position.set(pt.x, (pt.y + 0.6) / 2 - 0.3, pt.z);
+        scene.add(pier);
+      });
+
+      const pylonGroup = new THREE.Group();
+      pylonGroup.position.copy(pMid);
+
+      const pylonMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.2, metalness: 0.2 });
+      const pylonLegL = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.35, 12, 12), pylonMat);
+      pylonLegL.position.set(-1.2, 5.5, 0);
+      pylonLegL.rotation.z = -0.12;
+      pylonGroup.add(pylonLegL);
+
+      const pylonLegR = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.35, 12, 12), pylonMat);
+      pylonLegR.position.set(1.2, 5.5, 0);
+      pylonLegR.rotation.z = 0.12;
+      pylonGroup.add(pylonLegR);
+
+      const pylonPeak = new THREE.Mesh(new THREE.ConeGeometry(0.35, 2.5, 12), pylonMat);
+      pylonPeak.position.set(0, 12.2, 0);
+      pylonGroup.add(pylonPeak);
+
+      const cableMat = new THREE.LineBasicMaterial({ color: 0xF5DE95, transparent: true, opacity: 0.85 });
+      for (let i = 1; i <= 6; i++) {
+        const h = 4.5 + i * 1.1;
+        const span = i * 2.1;
+        const lineGeo1 = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, h, 0),
+          new THREE.Vector3(0, 0, span)
+        ]);
+        pylonGroup.add(new THREE.Line(lineGeo1, cableMat));
+
+        const lineGeo2 = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, h, 0),
+          new THREE.Vector3(0, 0, -span)
+        ]);
+        pylonGroup.add(new THREE.Line(lineGeo2, cableMat));
+      }
+
+      scene.add(pylonGroup);
+    }
+
+    // =========================================================================
+    // تثبيت أسطول السفن ثلاثية الأبعاد الحقيقية (Mälarjakt & Nordic Folkboat)
+    // ثابتين في أماكنهم التاريخية الساحلية مع منسوب طفو ممتاز لمنع الغرق
+    // =========================================================================
+    function loadUserGLBShips() {
+      const loader = window.THREE && window.THREE.GLTFLoader ? new THREE.GLTFLoader() : null;
+      if (!loader) {
+        console.warn('GLTFLoader is not ready yet');
+        return;
+      }
+
+      function parseOrFetchGLB(base64Data, filename, onLoaded) {
+        if (base64Data && typeof base64Data === 'string' && base64Data.length > 100) {
+          try {
+            const bin = window.atob(base64Data);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+              bytes[i] = bin.charCodeAt(i);
+            }
+            loader.parse(bytes.buffer, '', onLoaded, (err) => {
+              console.warn('In-memory parse failed for ' + filename + ', attempting fetch:', err);
+              loader.load(filename, onLoaded, undefined, (e) => console.error('Fetch error:', e));
+            });
+            return;
+          } catch(e) {
+            console.warn('In-memory decode failed, trying fetch:', e);
+          }
+        }
+        loader.load(filename, onLoaded, undefined, (err) => {
+          console.error('Load error for ' + filename, err);
+        });
+      }
+
+      // 1. مجسم سفينة البوم الكويتية التراثية الكبيرة (قارب كبير - بوم كويتي عريق)
+      parseOrFetchGLB(window.KUWAITI_BOUM_SHIP_GLB_BASE64 || window.MALARJAKT_GLB_BASE64, 'models/kuwaiti_boum_ship.glb', (gltf) => {
+        window.KUWAITI_BOUM_GLTF_SCENE = gltf.scene;
+        window.MALARJAKT_GLTF_SCENE = gltf.scene;
+        function placeStationaryBoum(x, z, rotY, name, phase) {
+          const rootGroup = new THREE.Group();
+          const rockGroup = new THREE.Group();
+          const model = gltf.scene.clone(true);
+
+          const box = new THREE.Box3().setFromObject(model);
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+
+          // توسيط المجسم وضبط منسوب غاطس الماء (-0.25)
+          model.position.set(-center.x, -box.min.y - 0.25, -center.z);
+          model.scale.setScalar(0.42);
+
+          model.traverse(c => {
+            if (c.isMesh) {
+              c.castShadow = true;
+              c.receiveShadow = true;
+              if (c.material) {
+                c.material.roughness = Math.max(c.material.roughness || 0, 0.45);
+              }
+            }
+          });
+          rockGroup.add(model);
+          rootGroup.add(rockGroup);
+
+          rootGroup.position.set(x, 0.65, z);
+          rootGroup.rotation.y = rotY;
+          scene.add(rootGroup);
+
+          maritimeFleet.push({
+            name: name,
+            rootGroup: rootGroup,
+            rockGroup: rockGroup,
+            baseX: x,
+            baseZ: z,
+            baseY: 0.65,
+            speed: 1.1,
+            phase: phase
+          });
+        }
+
+        // سفينة 1: راسية وشامخة في مياه جون الكويت العميقة قبالة العاصمة
+        placeStationaryBoum(57.0, -17.5, -Math.PI / 3.0, 'سفينة البوم الكويتية التراثية في جون الكويت قبالة العاصمة', 0);
+
+        // سفينة 2: في المياه المفتوحة الجنوبية العميقة قبالة الخيران
+        placeStationaryBoum(90.0, 36.0, Math.PI / 2.2, 'سفينة البوم التراثية في المياه المفتوحة الجنوبية', 1.8);
+
+        console.log('⛵ تم نشر سفن البوم الكويتية التراثية الكبيرة في المياه الإقليمية بنجاح');
+      });
+
+      // 2. مجسم القارب الكويتي الصغير التراثي (قارب صغير - الماشوة)
+      parseOrFetchGLB(window.KUWAITI_SMALL_BOAT_GLB_BASE64 || window.NORDIC_FOLKBOAT_GLB_BASE64, 'models/kuwaiti_small_boat.glb', (gltf) => {
+        window.KUWAITI_SMALL_BOAT_GLTF_SCENE = gltf.scene;
+        window.NORDIC_FOLKBOAT_GLTF_SCENE = gltf.scene;
+        function placeStationarySmallBoat(x, z, rotY, name, phase) {
+          const rootGroup = new THREE.Group();
+          const rockGroup = new THREE.Group();
+          const model = gltf.scene.clone(true);
+
+          const box = new THREE.Box3().setFromObject(model);
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+
+          // توسيط القارب الصغير وضبط منسوب الطفو فوق سطح الماء
+          model.position.set(-center.x, -box.min.y - 0.20, -center.z);
+          model.scale.setScalar(0.65);
+
+          model.traverse(c => {
+            if (c.isMesh) {
+              c.castShadow = true;
+              c.receiveShadow = true;
+              if (c.material) {
+                c.material.roughness = Math.max(c.material.roughness || 0, 0.45);
+              }
+            }
+          });
+          rockGroup.add(model);
+          rootGroup.add(rockGroup);
+
+          rootGroup.position.set(x, 0.55, z);
+          rootGroup.rotation.y = rotY;
+          scene.add(rootGroup);
+
+          maritimeFleet.push({
+            name: name,
+            rootGroup: rootGroup,
+            rockGroup: rockGroup,
+            baseX: x,
+            baseZ: z,
+            baseY: 0.55,
+            speed: 1.3,
+            phase: phase
+          });
+        }
+
+        // قارب 1: في المياه المفتوحة العميقة لخور عبد الله شمال شرق جزيرة بوبيان
+        placeStationarySmallBoat(98.0, -48.0, Math.PI / 2.5, 'القارب الكويتي في مياه خور عبد الله المفتوحة', 0.5);
+
+        // قارب 2: في منتصف الساحل الجنوبي في البحر المفتوح قبالة ميناء الأحمدي ورأس الزور
+        placeStationarySmallBoat(78.0, 14.0, Math.PI / 2.4, 'قارب الصيد الكويتي في المياه المفتوحة الجنوبية', 2.4);
+
+        console.log('🛶 تم نشر القوارب الكويتية التراثية (الماشوة) في المياه المفتوحة');
+      });
+
+      // 3. مجسم جيب رانجلر الصحراوي (Jeep Wrangler 4x4)
+      parseOrFetchGLB(window.JEEP_WRANGLER_GLB_BASE64, 'models/jeep_wrangler_free.glb', (gltf) => {
+        const sceneObj = gltf.scene;
+        const toRemove = [];
+        sceneObj.traverse(c => {
+          if (c.isLight || c.isCamera || c.name === 'Sun' || c.name === 'Camera' || c.name === 'Area001') {
+            toRemove.push(c);
+          } else if (c.isMesh) {
+            c.castShadow = true;
+            c.receiveShadow = true;
+            if (c.material) {
+              // الحفاظ على لون الجيب الأصفر الصحراوي الأصلي بدون أي تبييض أو عتمة
+              c.material.metalness = Math.min(c.material.metalness || 0, 0.15);
+              c.material.roughness = Math.max(c.material.roughness || 0, 0.55);
+              if (c.material.color) {
+                c.material.color.setHex(0xFFFFFF); // قناع أبيض نقي لإظهار ألوان الملمس الأصفر كما هي بدقة
+              }
+              if (c.material.emissive) {
+                c.material.emissive.setHex(0x000000); // إلغاء أي توهج لتفادي تحول اللون إلى أبيض
+              }
+            }
+          }
+        });
+        toRemove.forEach(c => { if (c.parent) c.parent.remove(c); });
+        window.JEEP_WRANGLER_SCENE = sceneObj;
+        console.log('✓ تم تحميل وتجهيز مجسم جيب رانجلر بلونه الأصفر الصحراوي الطبيعي');
+      });
+
+      // 4. مجسم هيونداي أكسنت 2013 (Hyundai Accent 2013)
+      parseOrFetchGLB(window.HYUNDAI_ACCENT_GLB_BASE64, 'models/hyundai_accent_2013.glb', (gltf) => {
+        const sceneObj = gltf.scene;
+        sceneObj.traverse(c => {
+          if (c.isMesh) {
+            c.castShadow = true;
+            c.receiveShadow = true;
+            if (c.material) {
+              const mName = (c.material.name || '').toLowerCase();
+              // صبغ هيكل هيونداي أكسنت بلون ستيل تيتانيوم كلاسيكي أنيق واضح المعالم (ليس أسود وليس أبيض)
+              if (mName.includes('body') || mName.includes('paint') || (c.material.color && c.material.color.r < 0.05 && c.material.color.g < 0.05 && c.material.color.b < 0.05 && !mName.includes('tire') && !mName.includes('interior'))) {
+                c.material.color.setHex(0x566B7D); // أزرق تيتانيوم ستيل أنيق يظهر مجسم السيارة بدقة
+                c.material.metalness = 0.40;
+                c.material.roughness = 0.35;
+              }
+              if (c.material.emissive) {
+                c.material.emissive.setHex(0x000000);
+              }
+            }
+          }
+        });
+        window.HYUNDAI_ACCENT_SCENE = sceneObj;
+        console.log('✓ تم تحميل وتجهيز مجسم هيونداي أكسنت بنجاح بلون تيتانيوم ستيل أنيق');
+      });
+
+      // 5. مجسم المعبد الإغريقي في جزيرة فيلكا (المحطة 1 - معبد إيكاروس)
+      parseOrFetchGLB(window.GREEK_TEMPLE_GLB_BASE64, 'models/greek_temple.glb', (gltf) => {
+        window.GREEK_TEMPLE_GLTF_SCENE = gltf.scene;
+        attachGreekTempleToStop1();
+        console.log('🏛️ تم تحميل وتجهيز مجسم المعبد الإغريقي في جزيرة فيلكا (المحطة 1)');
+      });
+
+      // 6. مجسم الجمل التراثي الأصيل مع انميشن الحركة
+      parseOrFetchGLB(window.CAMEL_GLB_BASE64, 'models/camel.glb', (gltf) => {
+        const sceneObj = gltf.scene;
+        sceneObj.traverse(c => {
+          if (c.isMesh) {
+            c.castShadow = true;
+            c.receiveShadow = true;
+            if (c.material) {
+              c.material.metalness = 0.0;
+              c.material.roughness = 0.78;
+              if (c.material.color) {
+                c.material.color.setHex(0xFFFFFF); // الحفاظ على وبر الجمل الصحراوي الطبيعي
+              }
+              if (c.material.emissive) {
+                c.material.emissive.setHex(0x000000); // إلغاء أي توهج لتفادي التبييض
+              }
+            }
+          }
+        });
+        window.CAMEL_GLTF_SCENE = sceneObj;
+        window.CAMEL_ANIMATIONS = gltf.animations || [];
+        console.log('🐪 تم تحميل وتجهيز مجسم الجمل التراثي مع الانميشن وبر صحراوي أصيل (' + window.CAMEL_ANIMATIONS.length + ' حركات)');
+      });
+
+      // 7. مجسم أبراج الكويت ثلاثي الأبعاد الحقيقي المحدث بدون قاعدة (المحطة 2 - رأس عجوزة)
+      parseOrFetchGLB(window.KUWAIT_TOWERS_NEW_GLB_BASE64 || window.KUWAIT_TOWER_GLB_BASE64, 'models/kuwait_towers.glb', (gltf) => {
+        window.KUWAIT_TOWERS_NEW_GLTF_SCENE = gltf.scene;
+        window.KUWAIT_TOWER_GLTF_SCENE = gltf.scene;
+        attachKuwaitTowersToStop2();
+        console.log('🗼 تم تحميل وتجهيز مجسم أبراج الكويت ثلاثي الأبعاد المحدث (بدون قاعدة) في رأس عجوزة (المحطة 2)');
+      });
+
+      // 8. مجسم سوق المباركية التراثي الأصيل الجديد (المحطة 3)
+      parseOrFetchGLB(window.SOUQ_AL_MUBARAKIYA_GLB_BASE64 || window.SEIF_PALACE_GLB_BASE64, 'models/souq_al_mubarakiya.glb', (gltf) => {
+        window.SOUQ_AL_MUBARAKIYA_GLTF_SCENE = gltf.scene;
+        window.SEIF_PALACE_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(3, gltf.scene, 0.42, -0.15, 'سوق المباركية التراثي الأصيل (الجديد)');
+        console.log('🏪 تم تحميل وتجهيز مجسم سوق المباركية التراثي الأصيل الجديد في المحطة 3');
+      });
+
+      // 9. مجسم بيوت وقرية كاظمة الطينية التراثية الأصيلة الجديد (المحطة 4)
+      parseOrFetchGLB(window.KAZMA_MUDBRICK_HOUSES_GLB_BASE64 || window.KAZIMA_CITADEL_GLB_BASE64, 'models/kazma_mudbrick_houses.glb', (gltf) => {
+        window.KAZMA_MUDBRICK_HOUSES_GLTF_SCENE = gltf.scene;
+        window.KAZIMA_CITADEL_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(4, gltf.scene, 0.48, 0.2, 'بيوت كاظمة الطينية التراثية الأصيلة (الجديدة)');
+        console.log('🏘️ تم تحميل وتجهيز مجسم بيوت كاظمة الطينية التراثية الأصيلة في المحطة 4');
+      });
+
+      // 10-أ. مجسم صرح جسر الشيخ جابر الأحمد الصباح عابراً جون الكويت بين الشويخ والصبية
+      parseOrFetchGLB(window.JABER_CAUSEWAY_BRIDGE_GLB_BASE64 || window.BOUBYAN_CAUSEWAY_GLB_BASE64, 'models/jaber_causeway_bridge.glb', (gltf) => {
+        window.JABER_CAUSEWAY_BRIDGE_GLTF_SCENE = gltf.scene;
+        buildSheikhJaberCauseway3D();
+        console.log('🌉 تم تحميل وتجهيز مجسم جسر الشيخ جابر الأحمد الصباح في موقعه الحقيقي عابراً جون الكويت');
+      });
+
+      // 10-ب. مجسم ميناء مبارك الكبير بجزيرة بوبيان (المحطة 5)
+      parseOrFetchGLB(window.MUBARAK_ALKABEER_PORT_GLB_BASE64, 'models/mubarak_alkabeer_port.glb', (gltf) => {
+        window.MUBARAK_ALKABEER_PORT_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(5, gltf.scene, 0.45, Math.PI / 2, 'ميناء مبارك الكبير بجزيرة بوبيان');
+        console.log('🏗️ تم تحميل وتجهيز مجسم ميناء مبارك الكبير بجزيرة بوبيان في المحطة 5');
+      });
+
+      // 11. مجسم أبراج مياه الكويت بالعبدلي والروضتين - برج ماي (المحطة 6)
+      parseOrFetchGLB(window.KUWAIT_WATER_TOWERS_GLB_BASE64 || window.RAWDATAIN_OASIS_GLB_BASE64, 'models/kuwait_water_towers.glb', (gltf) => {
+        window.KUWAIT_WATER_TOWERS_GLTF_SCENE = gltf.scene;
+        window.RAWDATAIN_OASIS_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(6, gltf.scene, 0.22, Math.PI / 4, 'أبراج مياه الكويت بالعبدلي والروضتين');
+        console.log('💧 تم تحميل وتجهيز مجسم أبراج مياه الكويت (برج ماي صوب العبدلي) في المحطة 6');
+      });
+
+      // 12. مجسم بيت الشعر البدوي التراثي صوب السالمي وبادية الشرف (المحطة 7)
+      parseOrFetchGLB(window.BAYT_AL_SHAAR_TENT_GLB_BASE64 || window.SALMI_FORT_GLB_BASE64, 'models/bayt_al_shaar_tent.glb', (gltf) => {
+        window.BAYT_AL_SHAAR_TENT_GLTF_SCENE = gltf.scene;
+        window.SALMI_FORT_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(7, gltf.scene, 0.60, 0.35, 'بيت الشعر البدوي التراثي بالسالمي');
+        console.log('⛺ تم تحميل وتجهيز مجسم بيت الشعر البدوي صوب السالمي في المحطة 7');
+      });
+
+      // 13. مجسم القصر الأحمر التاريخي بواحة الجهراء (المحطة 8)
+      parseOrFetchGLB(window.RED_PALACE_GLB_BASE64, 'models/red_palace_jahra.glb', (gltf) => {
+        window.RED_PALACE_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(8, gltf.scene, 0.45, 0.10, 'القصر الأحمر بالجهراء');
+      });
+
+      // 14. مجسم مضخة استخراج النفط بحقل برقان ومصفاة الأحمدي (المحطة 9)
+      parseOrFetchGLB(window.OIL_PUMPJACK_GLB_BASE64 || window.BURGAN_OIL_GLB_BASE64, 'models/oil_pumpjack.glb', (gltf) => {
+        window.OIL_PUMPJACK_GLTF_SCENE = gltf.scene;
+        window.BURGAN_OIL_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(9, gltf.scene, 0.75, Math.PI / 4, 'مضخة استخراج النفط بحقل برقان');
+        console.log('🛢️ تم تحميل وتجهيز مجسم مضخة استخراج النفط بحقل برقان في المحطة 9');
+      });
+
+      // 15. مجسم محارة ولؤلؤة مغاصات الخيران الكبرى (المحطة 10)
+      parseOrFetchGLB(window.OYSTER_SHELL_PEARL_GLB_BASE64 || window.KHIRAN_PEARL_GLB_BASE64, 'models/oyster_shell_pearl.glb', (gltf) => {
+        window.OYSTER_SHELL_PEARL_GLTF_SCENE = gltf.scene;
+        window.KHIRAN_PEARL_GLTF_SCENE = gltf.scene;
+        attachLandmarkToStop(10, gltf.scene, 0.95, -Math.PI / 3, 'محارة ولؤلؤة مغاصات الخيران الكبرى');
+        console.log('🦪 تم تحميل وتجهيز مجسم محارة ولؤلؤة مغاصات الخيران الكبرى في المحطة 10');
+      });
+    }
+
+    function cloneSkinnedModel(source) {
+      const clone = source.clone(true);
+      const boneMap = {};
+      clone.traverse(c => {
+        if (c.isBone) boneMap[c.name] = c;
+      });
+      clone.traverse(c => {
+        if (c.isSkinnedMesh && c.skeleton) {
+          const newBones = c.skeleton.bones.map(b => boneMap[b.name] || b);
+          c.skeleton = new THREE.Skeleton(newBones, c.skeleton.boneInverses);
+          c.bind(c.skeleton, c.bindMatrix);
+        }
+      });
+      return clone;
+    }
+
+    function attachGreekTempleToStop1() {
+      if (!window.GREEK_TEMPLE_GLTF_SCENE) return;
+      const stopObj = stopObjects && stopObjects[1];
+      if (!stopObj) return;
+
+      if (stopObj.baseMesh) stopObj.baseMesh.visible = false;
+      if (stopObj.pulseRing) stopObj.pulseRing.visible = false;
+      if (stopObj.badgeSprite) stopObj.badgeSprite.visible = false;
+
+      if (stopObj.buildingModel) return;
+
+      const templeModel = window.GREEK_TEMPLE_GLTF_SCENE.clone(true);
+      const scale = 0.46;
+      templeModel.scale.setScalar(scale);
+      templeModel.position.set(0, 0.05, 0);
+      templeModel.rotation.y = 0.26;
+
+      templeModel.traverse(c => {
+        if (c.isMesh) {
+          c.castShadow = true;
+          c.receiveShadow = true;
+          c.userData.stopId = 1;
+          if (c.material) {
+            c.material.roughness = Math.max(c.material.roughness || 0, 0.65);
+          }
+        }
+      });
+
+      stopObj.group.add(templeModel);
+      stopObj.buildingModel = templeModel;
+      stopObj.targetScale = scale;
+      console.log('🏛️ تم تكبير وتثبيت معبد إيكاروس الإغريقي في جزيرة فيلكا بنجاح (المحطة 1)');
+    }
+
+    function attachKuwaitTowersToStop2() {
+      const towerScene = window.KUWAIT_TOWERS_NEW_GLTF_SCENE || window.KUWAIT_TOWER_GLTF_SCENE;
+      if (!towerScene) return;
+      const stopObj = stopObjects && stopObjects[2];
+      if (!stopObj) return;
+
+      if (stopObj.baseMesh) stopObj.baseMesh.visible = false;
+      if (stopObj.pulseRing) stopObj.pulseRing.visible = false;
+      if (stopObj.badgeSprite) stopObj.badgeSprite.visible = false;
+
+      // إزالة أي مجسم سابق إن وجد ليحل المجسم المحدث الجديد مكانه
+      if (stopObj.buildingModel) {
+        stopObj.group.remove(stopObj.buildingModel);
+        stopObj.buildingModel = null;
+      }
+
+      const towerModel = towerScene.clone(true);
+
+      // إزالة القاعدة بالكامل وفق توجيه المستخدم الصريح ("بس شيل القاعدة")
+      const toRemove = [];
+      towerModel.traverse(c => {
+        if (c.isMesh) {
+          const matName = (c.material && c.material.name) ? c.material.name.toLowerCase() : '';
+          const nodeName = (c.name || '').toLowerCase();
+          if (matName.includes('plaza') || matName.includes('base') || matName.includes('promenade') ||
+              nodeName.includes('plaza') || nodeName.includes('base') || nodeName.includes('promenade') || nodeName.includes('platform')) {
+            toRemove.push(c);
+          } else {
+            c.castShadow = true;
+            c.receiveShadow = true;
+            c.userData.stopId = 2;
+            if (c.material) {
+              c.material.roughness = Math.max(c.material.roughness || 0, 0.25);
+              if (c.material.emissive) {
+                c.material.emissive.setHex(0x101518);
+              }
+            }
+          }
+        }
+      });
+      toRemove.forEach(r => {
+        if (r.parent) r.parent.remove(r);
+      });
+
+      const box = new THREE.Box3().setFromObject(towerModel);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      const container = new THREE.Group();
+      // محاذاة مركز الأبراج أفقياً وتثبيت أسفل الأعمدة مباشرة على سطح الأرض (y = 0)
+      towerModel.position.set(-center.x, -box.min.y, -center.z);
+      container.add(towerModel);
+
+      // مقياس عملاق وشامخ وأسطوري في رأس عجوزة (ارتفاع ~12.2 وحدات)
+      const scale = 0.65;
+      container.scale.setScalar(scale);
+      container.position.set(0, 0, 0);
+      container.rotation.y = Math.PI * 0.75;
+
+      stopObj.group.add(container);
+      stopObj.buildingModel = container;
+      stopObj.targetScale = scale;
+      console.log('🗼 تم تثبيت مجسم أبراج الكويت المحدث (بدون قاعدة) في رأس عجوزة بنجاح (المحطة 2)');
+    }
+
+    function buildSheikhJaberCauseway3D() {
+      if (!window.JABER_CAUSEWAY_BRIDGE_GLTF_SCENE) return;
+
+      if (window.jaberBayBridgeGroup) {
+        scene.remove(window.jaberBayBridgeGroup);
+        window.jaberBayBridgeGroup = null;
+      }
+
+      const bridgeModel = window.JABER_CAUSEWAY_BRIDGE_GLTF_SCENE.clone(true);
+
+      // تموضع الجسر الحقيقي عابراً مياه جون الكويت من الشويخ (الجنوب) إلى الصبية (الشمال)
+      const pStart = new THREE.Vector3(40.0, 0.15, -3.5);   // ساحل الشويخ / غرب العاصمة
+      const pEnd   = new THREE.Vector3(58.5, 0.15, -28.5);  // ساحل رأس الصبية شمال الجون
+
+      const cx = (pStart.x + pEnd.x) / 2; // 49.25
+      const cz = (pStart.z + pEnd.z) / 2; // -16.0
+      const dist = pStart.distanceTo(pEnd); // 31.10
+      const scale = dist / 38.0; // ~0.818
+
+      const dx = pEnd.x - pStart.x;
+      const dz = pEnd.z - pStart.z;
+      const theta = Math.atan2(-dz, dx); // 0.9337 rad (~53.5°)
+
+      const group = new THREE.Group();
+      group.position.set(cx, 0.2, cz);
+      group.rotation.y = theta;
+      group.scale.setScalar(scale);
+
+      bridgeModel.traverse(c => {
+        if (c.isMesh) {
+          c.castShadow = true;
+          c.receiveShadow = true;
+          c.userData.isJaberCauseway = true;
+          if (c.material) {
+            c.material.roughness = Math.max(c.material.roughness || 0, 0.32);
+          }
+        }
+      });
+
+      group.add(bridgeModel);
+      scene.add(group);
+      window.jaberBayBridgeGroup = group;
+      console.log('🌉 تم بناء وتثبيت صرح جسر الشيخ جابر الأحمد في مكانه الجغرافي الحقيقي عابراً جون الكويت بين الشويخ والصبية!');
+    }
+
+    function attachLandmarkToStop(stopId, gltfScene, scale = 1.0, rotY = 0, nameLog = '') {
+      if (!gltfScene) return;
+      const stopObj = stopObjects && stopObjects[stopId];
+      if (!stopObj) return;
+
+      // إخفاء الأسطوانة والقرص والشارة بالكامل ليحل المجسم المعماري مكانها
+      if (stopObj.baseMesh) stopObj.baseMesh.visible = false;
+      if (stopObj.pulseRing) stopObj.pulseRing.visible = false;
+      if (stopObj.badgeSprite) stopObj.badgeSprite.visible = false;
+
+      // إزالة أي مجسم سابق إن وجد
+      if (stopObj.buildingModel) {
+        stopObj.group.remove(stopObj.buildingModel);
+        stopObj.buildingModel = null;
+      }
+
+      const model = gltfScene.clone(true);
+      const box = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      const container = new THREE.Group();
+      model.position.set(-center.x, -box.min.y, -center.z);
+      container.add(model);
+      container.scale.setScalar(scale);
+      container.rotation.y = rotY;
+
+      model.traverse(c => {
+        if (c.isMesh) {
+          c.castShadow = true;
+          c.receiveShadow = true;
+          c.userData.stopId = stopId;
+          if (c.material) {
+            c.material.roughness = Math.max(c.material.roughness || 0, 0.35);
+
+            // دمج أرضية وبلاط ساحة سوق المباركية بلون رملي صحراوي دافئ متناسق تماماً مع أرضية الخريطة
+            if (stopId === 3 && c.material.name) {
+              const mName = c.material.name.toLowerCase();
+              if (mName.includes('paving') || mName.includes('floor') || mName.includes('border_tile')) {
+                if (c.material.color) c.material.color.setHex(0xE0C89E);
+                c.material.roughness = 0.95;
+                c.material.metalness = 0.0;
+              }
+            }
+          }
+        }
+      });
+
+      stopObj.group.add(container);
+      stopObj.buildingModel = container;
+      stopObj.targetScale = scale;
+      console.log(`🏰 تم تثبيت مجسم ${nameLog} بنجاح في المحطة (${stopId})`);
+    }
+
+    function createKuwaitFlagTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#007A3D';
+      ctx.fillRect(0, 0, 256, 42.6);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 42.6, 256, 42.6);
+
+      ctx.fillStyle = '#CE1126';
+      ctx.fillRect(0, 85.2, 256, 42.8);
+
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(75, 42.6);
+      ctx.lineTo(75, 85.2);
+      ctx.lineTo(0, 128);
+      ctx.closePath();
+      ctx.fill();
+
+      return new THREE.CanvasTexture(canvas);
+    }
+    const flagTexture = createKuwaitFlagTexture();
+
+    function buildHistoricalStops3D() {
+      STOPS.forEach(stop => {
+        const group = new THREE.Group();
+        group.position.set(stop.x, 2.3, stop.z);
+        group.userData = { stopId: stop.id };
+
+        const baseGeo = new THREE.CylinderGeometry(2.2, 2.7, 0.45, 32);
+        const baseMat = new THREE.MeshStandardMaterial({
+          color: 0xD4AF37,
+          roughness: 0.25,
+          metalness: 0.85
+        });
+        const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+        baseMesh.position.y = 0.22;
+        baseMesh.castShadow = true;
+        group.add(baseMesh);
+
+        const pulseGeo = new THREE.RingGeometry(2.8, 3.5, 32);
+        const pulseMat = new THREE.MeshBasicMaterial({
+          color: 0xF7DE8B,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.75
+        });
+        const pulseRing = new THREE.Mesh(pulseGeo, pulseMat);
+        pulseRing.rotation.x = -Math.PI / 2;
+        pulseRing.position.y = 0.05;
+        group.add(pulseRing);
+
+        const badgeCanvas = document.createElement('canvas');
+        badgeCanvas.width = 256;
+        badgeCanvas.height = 256;
+        const bCtx = badgeCanvas.getContext('2d');
+        const grad = bCtx.createRadialGradient(128, 128, 20, 128, 128, 116);
+        grad.addColorStop(0, '#F5C642');
+        grad.addColorStop(1, '#A9750D');
+        bCtx.fillStyle = grad;
+        bCtx.beginPath();
+        bCtx.arc(128, 128, 116, 0, Math.PI * 2);
+        bCtx.fill();
+        bCtx.strokeStyle = '#FFFFFF';
+        bCtx.lineWidth = 14;
+        bCtx.stroke();
+        bCtx.fillStyle = '#FFFFFF';
+        bCtx.font = 'bold 112px "Segoe UI", Arial, sans-serif';
+        bCtx.textAlign = 'center';
+        bCtx.textBaseline = 'middle';
+        bCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        bCtx.shadowBlur = 10;
+        bCtx.shadowOffsetY = 4;
+        bCtx.fillText(String(stop.id), 128, 134);
+
+        const badgeTex = new THREE.CanvasTexture(badgeCanvas);
+        const spriteMat = new THREE.SpriteMaterial({ map: badgeTex, depthTest: true, depthWrite: false });
+        const badgeSprite = new THREE.Sprite(spriteMat);
+        badgeSprite.scale.set(5.2, 5.2, 1);
+        badgeSprite.position.set(0, 5.8, 0);
+        group.add(badgeSprite);
+
+        scene.add(group);
+
+        // إخفاء الأسطوانات والشارات والحلقات لكافة المحطات العشر لوجود مجسمات معمارية ثلاثية الأبعاد
+        baseMesh.visible = false;
+        pulseRing.visible = false;
+        badgeSprite.visible = false;
+
+        stopObjects[stop.id] = {
+          group,
+          baseMesh,
+          pulseRing,
+          badgeSprite
+        };
+      });
+
+      if (window.GREEK_TEMPLE_GLTF_SCENE) attachGreekTempleToStop1();
+      if (window.KUWAIT_TOWERS_NEW_GLTF_SCENE || window.KUWAIT_TOWER_GLTF_SCENE) attachKuwaitTowersToStop2();
+      if (window.SOUQ_AL_MUBARAKIYA_GLTF_SCENE || window.SEIF_PALACE_GLTF_SCENE) attachLandmarkToStop(3, window.SOUQ_AL_MUBARAKIYA_GLTF_SCENE || window.SEIF_PALACE_GLTF_SCENE, 0.42, -0.15, 'سوق المباركية التراثي الأصيل (الجديد)');
+      if (window.KAZMA_MUDBRICK_HOUSES_GLTF_SCENE || window.KAZIMA_CITADEL_GLTF_SCENE) attachLandmarkToStop(4, window.KAZMA_MUDBRICK_HOUSES_GLTF_SCENE || window.KAZIMA_CITADEL_GLTF_SCENE, 0.48, 0.2, 'بيوت كاظمة الطينية التراثية الأصيلة');
+      if (window.MUBARAK_ALKABEER_PORT_GLTF_SCENE || window.BOUBYAN_CAUSEWAY_GLTF_SCENE) attachLandmarkToStop(5, window.MUBARAK_ALKABEER_PORT_GLTF_SCENE || window.BOUBYAN_CAUSEWAY_GLTF_SCENE, 0.45, Math.PI / 2, 'ميناء مبارك الكبير بجزيرة بوبيان');
+      if (window.JABER_CAUSEWAY_BRIDGE_GLTF_SCENE) buildSheikhJaberCauseway3D();
+      if (window.KUWAIT_WATER_TOWERS_GLTF_SCENE || window.RAWDATAIN_OASIS_GLTF_SCENE) attachLandmarkToStop(6, window.KUWAIT_WATER_TOWERS_GLTF_SCENE || window.RAWDATAIN_OASIS_GLTF_SCENE, 0.22, Math.PI / 4, 'أبراج مياه الكويت بالعبدلي والروضتين');
+      if (window.BAYT_AL_SHAAR_TENT_GLTF_SCENE || window.SALMI_FORT_GLTF_SCENE) attachLandmarkToStop(7, window.BAYT_AL_SHAAR_TENT_GLTF_SCENE || window.SALMI_FORT_GLTF_SCENE, 0.60, 0.35, 'بيت الشعر البدوي التراثي بالسالمي');
+      if (window.RED_PALACE_GLTF_SCENE) attachLandmarkToStop(8, window.RED_PALACE_GLTF_SCENE, 0.45, 0.10, 'القصر الأحمر بالجهراء');
+      if (window.OIL_PUMPJACK_GLTF_SCENE || window.BURGAN_OIL_GLTF_SCENE) attachLandmarkToStop(9, window.OIL_PUMPJACK_GLTF_SCENE || window.BURGAN_OIL_GLTF_SCENE, 0.75, Math.PI / 4, 'مضخة استخراج النفط بحقل برقان');
+      if (window.OYSTER_SHELL_PEARL_GLTF_SCENE || window.KHIRAN_PEARL_GLTF_SCENE) attachLandmarkToStop(10, window.OYSTER_SHELL_PEARL_GLTF_SCENE || window.KHIRAN_PEARL_GLTF_SCENE, 0.95, -Math.PI / 3, 'محارة ولؤلؤة مغاصات الخيران الكبرى');
+
+      refreshStops3DVisuals();
+    }
+
+    function refreshStops3DVisuals() {
+      STOPS.forEach(stop => {
+        const obj = stopObjects[stop.id];
+        if (!obj) return;
+
+        const isCompleted = gameState.completedStops.includes(stop.id);
+        const isCurrent = (stop.id === gameState.currentStopId);
+
+        // إبقاء الشارات المخفضة مخفية لوجود المعالم ثلاثية الأبعاد
+        obj.badgeSprite.visible = false;
+
+        if (isCompleted) {
+          obj.pulseRing.material.color.setHex(0x007A3D);
+        } else if (isCurrent) {
+          obj.pulseRing.material.color.setHex(0xF5CE6A);
+        } else {
+          obj.pulseRing.material.color.setHex(0x607D8B);
+        }
+      });
+
+      buildConnectingTrails3D();
+    }
+
+    // =========================================================================
+    // نظام نقاط الوصول والواجهات المعمارية أمام كل معلم (المدخل والساحة الخارجية)
+    // تمنع دخول الطرق وسط المباني وتجعل المركبات تصل وتتوقف أمام الواجهة الرئيسية
+    // =========================================================================
+    function getStopFrontWaypoint(stopId) {
+      const roadY = 2.52;
+      switch (stopId) {
+        case 1: // جزيرة فيلكا - مرفأ الإبحار التراثي في مياه الخليج غرب الجزيرة
+          return new THREE.Vector3(73.5, 0.35, -13.2);
+        case 2: // أبراج الكويت - ساحة وطريق شارع الخليج العربي جنوب الأبراج في رأس عجوزة
+          return new THREE.Vector3(54.5, roadY, 1.2);
+        case 3: // سوق المباركية - ساحة بوابة الدخول التراثية الجنوبية أمام واجهة الخط العربي
+          return new THREE.Vector3(34.2, roadY, 5.5);
+        case 4: // قلعة كاظمة - ساحة البوابة الجنوبية المطلة على جون الكويت
+          return new THREE.Vector3(28.0, roadY, -14.0);
+        case 5: // ميناء مبارك الكبير بجزيرة بوبيان - الساحة والمدخل الرئيسي للميناء
+          return new THREE.Vector3(70.5, roadY, -48.0);
+        case 6: // واحة الروضتين ومزارع العبدلي - ساحة المدخل الجنوبي للواحة والينابيع
+          return new THREE.Vector3(32.0, roadY, -51.2);
+        case 7: // حصن السالمي وبادية الشرف - ساحة البوابة الشرقية للحصن باتجاه الكويت
+          return new THREE.Vector3(-41.5, roadY, -2.0);
+        case 8: // القصر الأحمر بالجهراء - ساحة البوابة الكبرى أمام المدافع التراثية وجهاً لوجه
+          return new THREE.Vector3(3.0, roadY, -0.6);
+        case 9: // حقل برقان ومصفاة الأحمدي - مدخل المنشأة النفطية الشمالي الغربي
+          return new THREE.Vector3(51.5, roadY, 21.0);
+        case 10: // نصب دانة الخيران - ساحة الكورنيش البحرية أمام صرح اللؤلؤ
+          return new THREE.Vector3(59.5, roadY, 61.5);
+        default:
+          const s = STOPS.find(x => x.id === stopId);
+          return s ? new THREE.Vector3(s.x, roadY, s.z) : new THREE.Vector3(0, roadY, 0);
+      }
+    }
+
+    // =========================================================================
+    // مسارات التنقل المنقطة الانسيابية ذات المنحنيات الهندسية الناعمة (Centripetal Splines)
+    // =========================================================================
+    function getRouteCurve(s1, s2) {
+      const fromId = s1.id;
+      const toId = s2.id;
+      const roadY = 2.52;
+
+      const pStart = getStopFrontWaypoint(fromId);
+      const pEnd = getStopFrontWaypoint(toId);
+
+      // 1 -> 2: البحر من ميناء جزيرة فيلكا بالماء إلى مرفأ شاطئ العاصمة (سفينة البوم التراثية)
+      if (fromId === 1 && toId === 2) {
+        const pMid = new THREE.Vector3(64.0, 0.35, -10.5); // مياه الخليج المفتوحة العميقة
+        const pDock = new THREE.Vector3(57.2, 0.35, -7.0); // مرفأ رسو سفينة البوم في المياه المفتوحة قبالة رأس عجوزة
+        return {
+          curve: new THREE.QuadraticBezierCurve3(pStart, pMid, pDock),
+          isWater: true,
+          startPt: pStart,
+          endPt: pDock
+        };
+      }
+
+      // 2 -> 3: شارع الخليج العربي الساحلي من أبراج الكويت إلى بوابة سوق المباركية
+      if (fromId === 2 && toId === 3) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(48.5, roadY, 1.8),
+          new THREE.Vector3(41.0, roadY, 3.6),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 3 -> 4: مسار بري انسيابي كامل يلتف حول شاطئ جون الكويت دون دخول البحر أو المباني
+      if (fromId === 3 && toId === 4) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(26.5, roadY, 4.2),
+          new THREE.Vector3(18.5, roadY, 1.0),
+          new THREE.Vector3(14.5, roadY, -5.5),
+          new THREE.Vector3(20.0, roadY, -12.5),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 4 -> 5: من قلعة كاظمة شمالاً عبر طريق الصبية إلى ميناء مبارك الكبير بجزيرة بوبيان
+      if (fromId === 4 && toId === 5) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(38.0, roadY, -26.0),
+          new THREE.Vector3(56.0, roadY, -38.0),
+          new THREE.Vector3(64.5, roadY, -44.0),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 5 -> 6: من ميناء مبارك الكبير بجزيرة بوبيان غرباً عبر الصبية نحو ساحة واحة الروضتين
+      if (fromId === 5 && toId === 6) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(64.5, roadY, -44.0),
+          new THREE.Vector3(52.0, roadY, -47.0),
+          new THREE.Vector3(40.0, roadY, -50.0),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 6 -> 7: من واحة الروضتين جنوب غرب عبر البادية الشمالية نحو بوابة حصن السالمي
+      if (fromId === 6 && toId === 7) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(15.0, roadY, -38.0),
+          new THREE.Vector3(-6.0, roadY, -24.0),
+          new THREE.Vector3(-25.0, roadY, -12.0),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 7 -> 8: طريق السالمي السريع (طريق 70) مباشرة نحو بوابة ومدافع القصر الأحمر في الجهراء
+      if (fromId === 7 && toId === 8) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(-25.0, roadY, -2.0),
+          new THREE.Vector3(-10.0, roadY, -1.8),
+          new THREE.Vector3(-2.0, roadY, -1.2),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 8 -> 9: من ساحة القصر الأحمر جنوب شرق عبر طريق الدائري السادس نحو حقل برقان ومضخات الأحمدي
+      if (fromId === 8 && toId === 9) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(16.0, roadY, 4.5),
+          new THREE.Vector3(34.0, roadY, 12.0),
+          new THREE.Vector3(44.0, roadY, 17.0),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // 9 -> 10: من الأحمدي جنوباً عبر طريق الفحيحيل السريع نحو ساحة دانة الخيران
+      if (fromId === 9 && toId === 10) {
+        const pts = [
+          pStart,
+          new THREE.Vector3(55.0, roadY, 34.0),
+          new THREE.Vector3(58.0, roadY, 48.0),
+          pEnd
+        ];
+        return {
+          curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+          isWater: false,
+          startPt: pts[0],
+          endPt: pts[pts.length - 1]
+        };
+      }
+
+      // باقي المسارات البرية التلقائية
+      const pts = [
+        pStart,
+        new THREE.Vector3((pStart.x + pEnd.x) / 2, roadY, (pStart.z + pEnd.z) / 2),
+        pEnd
+      ];
+      return {
+        curve: new THREE.CatmullRomCurve3(pts, false, 'centripetal'),
+        isWater: false,
+        startPt: pts[0],
+        endPt: pts[pts.length - 1]
+      };
+    }
+
+    function createDashedSurfaceRouteMesh(s1, s2) {
+      const { curve, isWater } = getRouteCurve(s1, s2);
+      const len = curve.getLength();
+
+      const dashLen = 3.2;
+      const gapLen = 1.8;
+      const period = dashLen + gapLen;
+      const numDashes = Math.max(3, Math.floor((len - 0.5) / period));
+
+      const width = isWater ? 0.70 : 1.35; // مسار ملاحي رشيق في البحر ومسار طرقي واضح في البر
+      const halfWidth = width / 2;
+      const positions = [];
+      const indices = [];
+      let vertOffset = 0;
+
+      for (let i = 0; i < numDashes; i++) {
+        const dStart = i * period + 0.6;
+        const dEnd = dStart + dashLen;
+        const tStart = Math.min(0.999, dStart / len);
+        const tEnd = Math.min(1.0, dEnd / len);
+
+        const a = curve.getPoint(tStart);
+        const b = curve.getPoint(tEnd);
+
+        const dX = b.x - a.x;
+        const dZ = b.z - a.z;
+        const dH = Math.hypot(dX, dZ);
+        if (dH < 0.05) continue;
+
+        const tX = dX / dH;
+        const tZ = dZ / dH;
+        const nX = -tZ * halfWidth;
+        const nZ = tX * halfWidth;
+
+        const y = isWater ? 0.35 : 2.65;
+
+        // 4 رؤوس لشريحة مسار منقطة عريضة وواضحة جداً
+        positions.push(
+          a.x - nX, y, a.z - nZ,
+          a.x + nX, y, a.z + nZ,
+          b.x - nX, y, b.z - nZ,
+          b.x + nX, y, b.z + nZ
+        );
+
+        indices.push(
+          vertOffset + 0, vertOffset + 1, vertOffset + 2,
+          vertOffset + 2, vertOffset + 1, vertOffset + 3
+        );
+        vertOffset += 4;
+      }
+
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+
+      const mat = new THREE.MeshBasicMaterial({
+        color: isWater ? 0xDCF4FF : 0xE5A817, // لون رغوي بحري نقي وشفاف في البحر يزيل أي اصفرار تحت القارب تماماً
+        transparent: isWater,
+        opacity: isWater ? 0.35 : 1.0,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const mesh = new THREE.Mesh(geom, mat);
+      return { mesh, curve, isWater };
+    }
+
+    function buildConnectingTrails3D() {
+      connectingTrails.forEach(m => scene.remove(m));
+      connectingTrails = [];
+
+      for (let i = 0; i < STOPS.length - 1; i++) {
+        const s1 = STOPS[i];
+        const s2 = STOPS[i + 1];
+        const isDone = gameState.completedStops.includes(s1.id);
+
+        if (isDone) {
+          const { mesh } = createDashedSurfaceRouteMesh(s1, s2);
+          scene.add(mesh);
+          connectingTrails.push(mesh);
+        }
+      }
+    }
+
+    function createProceduralDhow() {
+      const dhow = new THREE.Group();
+
+      const hullGroup = new THREE.Group();
+      const woodMat = new THREE.MeshStandardMaterial({ color: 0x5C381E, roughness: 0.75 });
+      const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x331C0C, roughness: 0.85 });
+
+      // هيكل البوم الكويتي التراثي - مقدمة مدببة نحو الأمام (+Z)
+      const hullGeo = new THREE.ConeGeometry(1.6, 7.5, 16);
+      const hull = new THREE.Mesh(hullGeo, woodMat);
+      hull.rotation.x = -Math.PI / 2; // رأس المخروط المدبب يشير للأمام (+Z)
+      hull.scale.set(0.85, 1.0, 0.45);
+      hull.position.set(0, 0.3, 0.5);
+      hullGroup.add(hull);
+
+      // ظهر السفينة (السطحة)
+      const deckGeo = new THREE.BoxGeometry(1.8, 0.25, 6.8);
+      const deck = new THREE.Mesh(deckGeo, woodMat);
+      deck.position.set(0, 0.55, -0.2);
+      hullGroup.add(deck);
+
+      // صدر البوم (المقدمة المرتفعة التقليدية)
+      const bowspritGeo = new THREE.CylinderGeometry(0.08, 0.16, 2.8, 8);
+      const bowsprit = new THREE.Mesh(bowspritGeo, darkWoodMat);
+      bowsprit.rotation.x = Math.PI / 3;
+      bowsprit.position.set(0, 0.9, 3.8);
+      hullGroup.add(bowsprit);
+
+      // قمرة المؤخرة (النيمشة) عند -Z
+      const cabinGeo = new THREE.BoxGeometry(1.5, 0.65, 1.6);
+      const cabin = new THREE.Mesh(cabinGeo, darkWoodMat);
+      cabin.position.set(0, 0.85, -2.4);
+      hullGroup.add(cabin);
+
+      dhow.add(hullGroup);
+
+      // السارية مائلة للأمام بنمط السفن الكويتية القديمة
+      const mastGeo = new THREE.CylinderGeometry(0.1, 0.16, 6.5, 8);
+      const mast = new THREE.Mesh(mastGeo, darkWoodMat);
+      mast.position.set(0, 3.4, 0.6);
+      mast.rotation.x = 0.12;
+      dhow.add(mast);
+
+      // الفرمن (الدستور) المائل الحامل للشراع المثلث
+      const sparGeo = new THREE.CylinderGeometry(0.06, 0.09, 8.2, 8);
+      const spar = new THREE.Mesh(sparGeo, darkWoodMat);
+      spar.position.set(0.05, 3.6, 0.2);
+      spar.rotation.x = 0.58;
+      dhow.add(spar);
+
+      // الشراع اللاتيني المثلث ممتد طولياً على امتداد هيكل السفينة Z
+      const sailGeo = new THREE.BufferGeometry();
+      const sailVerts = new Float32Array([
+        0.06, 6.5, 1.9,
+        0.06, 1.2, -2.1,
+        0.06, 0.9, 2.5
+      ]);
+      sailGeo.setAttribute('position', new THREE.BufferAttribute(sailVerts, 3));
+      sailGeo.computeVertexNormals();
+      const sailMat = new THREE.MeshStandardMaterial({
+        color: 0xF7F4EC,
+        roughness: 0.5,
+        side: THREE.DoubleSide
+      });
+      const sail = new THREE.Mesh(sailGeo, sailMat);
+      dhow.add(sail);
+
+      return dhow;
+    }
+
+    function createDesertVoyager() {
+      const group = new THREE.Group();
+      const type = selectedVehicleType || 'camel';
+
+      if (type === 'camel' && window.CAMEL_GLTF_SCENE) {
+        // --- 1. الجمل التراثي الأصيل مع انميشن المشي الحقيقي ---
+        const camelGroup = new THREE.Group();
+        const innerGroup = new THREE.Group();
+        const camelModel = cloneSkinnedModel(window.CAMEL_GLTF_SCENE);
+        const scale = 1.30;
+        camelModel.scale.setScalar(scale);
+
+        // محاذاة المركز والارتفاع: الأقدام على الأرض والرأس للأمام
+        camelModel.position.set(0, 0, 0.29 * scale);
+        innerGroup.add(camelModel);
+        innerGroup.rotation.y = Math.PI; // تدوير ليكون الوجه متجهاً للأمام على محور السير (+Z)
+        camelGroup.add(innerGroup);
+
+        camelModel.traverse(c => {
+          if (c.isMesh) {
+            c.castShadow = true;
+            c.receiveShadow = true;
+          }
+        });
+
+        // تشغيل انميشن خطو الجمل WalkCycle
+        if (window.CAMEL_ANIMATIONS && window.CAMEL_ANIMATIONS.length > 0) {
+          const mixer = new THREE.AnimationMixer(camelModel);
+          const walkClip = window.CAMEL_ANIMATIONS.find(a => a.name.includes('Walk') || a.name === 'Armature|WalkCycle') || window.CAMEL_ANIMATIONS[0];
+          if (walkClip) {
+            const action = mixer.clipAction(walkClip);
+            action.setEffectiveTimeScale(1.15); // سرعة خطو طبيعية متناسقة مع السرعة
+            action.play();
+            travelerMixer = mixer;
+          }
+        }
+
+        group.add(camelGroup);
+
+      } else if (type === 'jeep' && window.JEEP_WRANGLER_SCENE) {
+        // --- 2. جيب رانجلر الصحراوي 4x4 (بدون علم) ---
+        travelerMixer = null;
+        const carModel = window.JEEP_WRANGLER_SCENE.clone(true);
+        const scale = 0.0090;
+        carModel.scale.setScalar(scale);
+        carModel.position.set(-0.052, -0.005, -0.454);
+        group.add(carModel);
+
+      } else if (type === 'accent' && window.HYUNDAI_ACCENT_SCENE) {
+        // --- 3. هيونداي أكسنت 2013 (بدون علم) ---
+        travelerMixer = null;
+        const innerRotGroup = new THREE.Group();
+        const carModel = window.HYUNDAI_ACCENT_SCENE.clone(true);
+        const scale = 2.18;
+        carModel.scale.setScalar(scale);
+        carModel.position.set(0.0, 0.116, 0.137);
+        innerRotGroup.add(carModel);
+        innerRotGroup.rotation.y = Math.PI;
+        group.add(innerRotGroup);
+
+      } else if (window.CAMEL_GLTF_SCENE) {
+        const camelGroup = new THREE.Group();
+        const innerGroup = new THREE.Group();
+        const camelModel = cloneSkinnedModel(window.CAMEL_GLTF_SCENE);
+        camelModel.scale.setScalar(1.30);
+        camelModel.position.set(0, 0, 0.29 * 1.30);
+        innerGroup.add(camelModel);
+        innerGroup.rotation.y = Math.PI;
+        camelGroup.add(innerGroup);
+        if (window.CAMEL_ANIMATIONS && window.CAMEL_ANIMATIONS.length > 0) {
+          const mixer = new THREE.AnimationMixer(camelModel);
+          const walkClip = window.CAMEL_ANIMATIONS.find(a => a.name.includes('Walk') || a.name === 'Armature|WalkCycle') || window.CAMEL_ANIMATIONS[0];
+          if (walkClip) {
+            mixer.clipAction(walkClip).play();
+            travelerMixer = mixer;
+          }
+        }
+        group.add(camelGroup);
+
+      } else if (window.JEEP_WRANGLER_SCENE) {
+        travelerMixer = null;
+        const carModel = window.JEEP_WRANGLER_SCENE.clone(true);
+        carModel.scale.setScalar(0.0090);
+        carModel.position.set(-0.052, -0.005, -0.454);
+        group.add(carModel);
+
+      } else if (window.HYUNDAI_ACCENT_SCENE) {
+        travelerMixer = null;
+        const innerRotGroup = new THREE.Group();
+        const carModel = window.HYUNDAI_ACCENT_SCENE.clone(true);
+        carModel.scale.setScalar(2.18);
+        carModel.position.set(0.0, 0.116, 0.137);
+        innerRotGroup.add(carModel);
+        innerRotGroup.rotation.y = Math.PI;
+        group.add(innerRotGroup);
+
+      } else {
+        travelerMixer = null;
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x98693A, roughness: 0.65, metalness: 0.2 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.0, 3.8), bodyMat);
+        body.position.y = 0.85;
+        body.castShadow = true;
+        group.add(body);
+      }
+
+      return group;
+    }
+
+    function updateVehicleButtonUI() {
+      const btn = document.getElementById('vehicleToggleBtn');
+      const iconSpan = document.getElementById('vehicleBtnIcon');
+      const labelSpan = document.getElementById('vehicleBtnLabel');
+      if (!btn) return;
+      const map = {
+        camel: { icon: '🐪', label: 'الجمل التراثي', title: 'وسيلة التنقل: الجمل التراثي الأصيل (اضغط للتبديل)' },
+        jeep: { icon: '🚙', label: 'جيب رانجلر 4x4', title: 'وسيلة التنقل: جيب رانجلر الصحراوي 4x4 (اضغط للتبديل)' },
+        accent: { icon: '🚗', label: 'هيونداي أكسنت', title: 'وسيلة التنقل: هيونداي أكسنت 2013 (اضغط للتبديل)' }
+      };
+      const cur = map[selectedVehicleType] || map.camel;
+      if (iconSpan) iconSpan.textContent = cur.icon;
+      if (labelSpan) labelSpan.textContent = cur.label;
+      btn.title = cur.title;
+    }
+
+    function toggleVehicleType() {
+      const list = ['camel', 'jeep', 'accent'];
+      let idx = list.indexOf(selectedVehicleType);
+      idx = (idx + 1) % list.length;
+      selectedVehicleType = list[idx];
+      try {
+        localStorage.setItem('kuwait_selected_vehicle', selectedVehicleType);
+      } catch(e) {}
+      updateVehicleButtonUI();
+
+      if (audio && audio.click) audio.click();
+
+      const names = {
+        camel: 'الجمل التراثي الأصيل 🐪',
+        jeep: 'جيب رانجلر الصحراوي 4x4 🚙',
+        accent: 'هيونداي أكسنت 2013 🚗'
+      };
+      const icons = { camel: '🐪', jeep: '🚙', accent: '🚗' };
+      showToast(`${icons[selectedVehicleType]} تم اختيار: ${names[selectedVehicleType]}`, 2200);
+
+      // إذا كانت المركبة تسير الآن في رحلة برية، استبدال وسيلة التنقل فوراً في نفس الموقع والتوجيه
+      if (currentJourney && currentJourney.travelerObj && !currentJourney.isWater) {
+        const oldObj = currentJourney.travelerObj;
+        const oldPos = oldObj.position.clone();
+        const oldRot = oldObj.rotation.clone();
+        scene.remove(oldObj);
+
+        const newObj = createDesertVoyager();
+        newObj.position.copy(oldPos);
+        newObj.rotation.copy(oldRot);
+        scene.add(newObj);
+        currentJourney.travelerObj = newObj;
+        currentTravelerMesh = newObj;
+      }
+    }
+
+    function showTravelBanner(text, onSkip) {
+      let banner = document.getElementById('travelBanner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'travelBanner';
+        banner.style.cssText = `
+          position: fixed;
+          top: 75px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(14, 26, 32, 0.94);
+          border: 1.5px solid #D4AF37;
+          border-radius: 30px;
+          padding: 10px 22px;
+          color: #FFF;
+          font-size: 15px;
+          font-weight: 700;
+          box-shadow: 0 10px 35px rgba(0,0,0,0.6);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          transition: opacity 0.4s ease;
+        `;
+        document.body.appendChild(banner);
+      }
+      banner.innerHTML = `
+        <span>${text}</span>
+        <button id="skipTravelBtn" style="
+          background: rgba(212, 175, 55, 0.22);
+          border: 1px solid #D4AF37;
+          color: #F7DE8B;
+          border-radius: 18px;
+          padding: 4px 12px;
+          font-size: 13px;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.2s;
+        ">تخطي الرحلة ⏩</button>
+      `;
+      const btn = document.getElementById('skipTravelBtn');
+      if (btn && onSkip) {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          onSkip();
+        };
+      }
+      banner.style.opacity = '1';
+      banner.style.display = 'flex';
+      return banner;
+    }
+
+    function hideTravelBanner() {
+      const banner = document.getElementById('travelBanner');
+      if (banner) {
+        banner.style.opacity = '0';
+        setTimeout(() => { banner.style.display = 'none'; }, 400);
+      }
+    }
+
+    function cancelCurrentJourney(triggerArrival = false) {
+      if (!currentJourney && !currentTravelerMesh) return;
+      const j = currentJourney;
+      currentJourney = null;
+      cameraTween = null;
+      travelerMixer = null;
+
+      if (j && j.travelerObj) {
+        scene.remove(j.travelerObj);
+      }
+      if (currentTravelerMesh) {
+        scene.remove(currentTravelerMesh);
+        currentTravelerMesh = null;
+      }
+      activeVoyageBoat = null;
+      hideTravelBanner();
+      controls.enabled = true;
+      refreshStops3DVisuals();
+
+      if (triggerArrival && j) {
+        viewFocusStop(j.toStopId);
+        if (typeof j.onArrival === 'function') {
+          const cb = j.onArrival;
+          j.onArrival = null;
+          cb();
+        }
+      }
+    }
+
+    function startTravelJourney(fromStopId, toStopId, onArrival) {
+      // إزالة وتنظيف أي رحلة سابقة فوراً لمنع بقاء أي مركبة عالقة على الخريطة
+      cancelCurrentJourney(false);
+
+      if (currentTravelerMesh) {
+        scene.remove(currentTravelerMesh);
+        currentTravelerMesh = null;
+      }
+
+      // إخفاء شارات وأرقام المحطات أثناء الرحلة السينمائية لضمان رؤية نقية تماماً دون أي حجب للكاميرا
+      Object.values(stopObjects).forEach(obj => {
+        if (obj.badgeSprite) obj.badgeSprite.visible = false;
+      });
+
+      const s1 = STOPS.find(s => s.id === fromStopId);
+      const s2 = STOPS.find(s => s.id === toStopId);
+      if (!s1 || !s2) {
+        if (onArrival) onArrival();
+        return;
+      }
+
+      const { mesh: routeMesh, curve, isWater } = createDashedSurfaceRouteMesh(s1, s2);
+      scene.add(routeMesh);
+      connectingTrails.push(routeMesh);
+
+      controls.enabled = false;
+
+      const duration = isWater ? 5400 : 4200;
+      const startTime = performance.now();
+
+      let travelerObj;
+      let boatRock = null;
+
+      if (isWater) {
+        showTravelBanner(`⛵ ركوب سفينة البوم التراثية الكبيرة والإبحار من ${s1.title} نحو ${s2.title} 🌊`, () => {
+          cancelCurrentJourney(true);
+        });
+        audio.flagRaise();
+
+        const boatRoot = new THREE.Group();
+        boatRock = new THREE.Group();
+        boatRoot.add(boatRock);
+
+        // استخدام سفينة البوم التراثية الكبيرة في رحلة الإبحار بناءً على طلب المستخدم
+        const boumScene = window.KUWAITI_BOUM_GLTF_SCENE || window.KUWAITI_SMALL_BOAT_GLTF_SCENE || window.NORDIC_FOLKBOAT_GLTF_SCENE;
+        if (boumScene) {
+          const innerBoat = new THREE.Group();
+          const clone = boumScene.clone(true);
+          const isBoum = !!window.KUWAITI_BOUM_GLTF_SCENE;
+
+          if (isBoum) {
+            clone.scale.setScalar(0.22);
+            const box = new THREE.Box3().setFromObject(clone);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            // توسيط سفينة البوم الكبيرة بدقة وضبط منسوب غاطس الماء
+            clone.position.set(-center.x, -box.min.y - 0.20, -center.z);
+            // صدر البوم ومقدمته المرتفعة تشير للأمام (+Z) مباشرة متناسقة مع اتجاه الإبحار
+            innerBoat.rotation.y = 0;
+          } else {
+            clone.scale.setScalar(0.50);
+            const box = new THREE.Box3().setFromObject(clone);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            clone.position.set(-center.x, -box.min.y - 0.20, -center.z);
+            innerBoat.rotation.y = 0;
+          }
+
+          clone.traverse(c => {
+            if (c.isMesh) {
+              c.castShadow = true;
+              c.receiveShadow = true;
+              if (c.material) {
+                c.material.roughness = Math.max(c.material.roughness || 0, 0.45);
+              }
+            }
+          });
+          innerBoat.add(clone);
+          boatRock.add(innerBoat);
+        } else {
+          boatRock.add(createProceduralDhow());
+        }
+
+        travelerObj = boatRoot;
+        activeVoyageBoat = boatRoot;
+      } else {
+        const vInfo = {
+          camel: { icon: '🐪', name: 'الجمل التراثي الأصيل' },
+          jeep: { icon: '🚙', name: 'جيب رانجلر الصحراوي 4x4' },
+          accent: { icon: '🚗', name: 'هيونداي أكسنت 2013' }
+        }[selectedVehicleType] || { icon: '🐪', name: 'الجمل التراثي الأصيل' };
+
+        showTravelBanner(`${vInfo.icon} الانطلاق (${vInfo.name}) نحو ${s2.title} 💨`, () => {
+          cancelCurrentJourney(true);
+        });
+        audio.laserTrail();
+        travelerObj = createDesertVoyager();
+      }
+
+      currentTravelerMesh = travelerObj;
+      scene.add(travelerObj);
+
+      currentJourney = {
+        travelerObj: travelerObj,
+        toStopId: toStopId,
+        onArrival: onArrival
+      };
+
+      // وضع الكاميرا فوراً بجانب وسيلة السفر من اللحظة الأولى لمنع بقائها بعيدة أو في اليابسة
+      const p0 = curve.getPoint(0);
+      const t0 = curve.getTangent(0);
+      if (isWater) {
+        camera.position.set(p0.x - t0.x * 5.0 + 3.0, p0.y + 4.5, p0.z - t0.z * 5.0 + 7.5);
+        controls.target.set(p0.x + t0.x * 1.5, p0.y + 1.8, p0.z + t0.z * 1.5);
+        camera.lookAt(controls.target);
+      } else {
+        camera.position.set(p0.x - t0.x * 11, p0.y + 6.0, p0.z - t0.z * 11);
+        controls.target.set(p0.x + t0.x * 2.0, p0.y + 1.5, p0.z + t0.z * 2.0);
+        camera.lookAt(controls.target);
+      }
+
+      cameraTween = {
+        update: (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const ease = progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+          const p = curve.getPoint(ease);
+          const t = curve.getTangent(ease);
+          const heading = Math.atan2(t.x, t.z);
+
+          if (isWater) {
+            const waveBob = Math.sin(now * 0.006) * 0.12;
+            const roll = Math.sin(now * 0.005) * 0.04;
+            const pitch = Math.cos(now * 0.004) * 0.02;
+
+            // موقع وتوجيه سفينة البوم في العالم: دوران أفقي نقي حول محور Y يمنع الانقلاب نهائياً
+            travelerObj.position.set(p.x, 0.55 + waveBob, p.z);
+            travelerObj.rotation.set(0, heading, 0);
+
+            // تمايل طبيعي هادئ مع الأمواج داخل المجسم دون التأثير على دوران العالم
+            if (boatRock) {
+              boatRock.rotation.set(pitch, 0, roll);
+            }
+
+            // كاميرا سينمائية جانبية في المياه المفتوحة تركز على سفينة البوم الكبيرة بأشرعتها وصواريها
+            const camPos = new THREE.Vector3(
+              p.x - t.x * 5.0 + 3.0,
+              p.y + 4.5,
+              p.z - t.z * 5.0 + 7.5
+            );
+            const lookTarget = new THREE.Vector3(
+              p.x + t.x * 1.5,
+              p.y + 1.8,
+              p.z + t.z * 1.5
+            );
+
+            camera.position.lerp(camPos, 0.12);
+            controls.target.lerp(lookTarget, 0.12);
+            camera.lookAt(controls.target);
+
+          } else {
+            // حركة المركبة على المسار البري
+            travelerObj.position.set(p.x, 2.65, p.z);
+            travelerObj.rotation.set(0, heading, 0);
+
+            const camDist = 16;
+            const camHeight = 9.0;
+            const camPos = new THREE.Vector3(
+              p.x - t.x * camDist,
+              p.y + camHeight,
+              p.z - t.z * camDist
+            );
+            const lookTarget = new THREE.Vector3(
+              p.x + t.x * 5,
+              p.y + 1.6,
+              p.z + t.z * 5
+            );
+
+            camera.position.lerp(camPos, 0.08);
+            controls.target.lerp(lookTarget, 0.08);
+            camera.lookAt(controls.target);
+          }
+
+          if (progress >= 1) {
+            const j = currentJourney;
+            currentJourney = null;
+            cameraTween = null;
+            travelerMixer = null;
+            controls.enabled = true;
+            hideTravelBanner();
+            refreshStops3DVisuals();
+
+            if (travelerObj) {
+              scene.remove(travelerObj);
+            }
+            if (currentTravelerMesh) {
+              scene.remove(currentTravelerMesh);
+              currentTravelerMesh = null;
+            }
+            activeVoyageBoat = null;
+
+            audio.correct();
+            viewFocusStop(toStopId);
+
+            if (j && typeof j.onArrival === 'function') {
+              j.onArrival();
+            }
+          }
+        }
+      };
+    }
+
+    function setup3DRaycasting(canvas) {
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      canvas.addEventListener('click', (e) => {
+        // أثناء التنقل بالرحلة نتجاهل النقر العشوائي على الخريطة لمنع تجميد المركبة في المنتصف
+        if (currentJourney) return;
+
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        const pickableMeshes = [];
+        Object.values(stopObjects).forEach(obj => {
+          obj.group.traverse(child => {
+            if (child.isMesh || child.isSprite) {
+              child.userData.stopId = obj.group.userData.stopId;
+              pickableMeshes.push(child);
+            }
+          });
+        });
+        if (window.jaberBayBridgeGroup) {
+          window.jaberBayBridgeGroup.traverse(child => {
+            if (child.isMesh) pickableMeshes.push(child);
+          });
+        }
+
+        const intersects = raycaster.intersectObjects(pickableMeshes, false);
+        if (intersects.length > 0) {
+          const hitObj = intersects[0].object;
+          if (hitObj.userData.isJaberCauseway) {
+            audio.click();
+            flyCameraTo(new THREE.Vector3(40.0, 28.0, 25.0), new THREE.Vector3(49.0, 2.5, -16.0), 1200);
+            showToast('🌉 جسر الشيخ جابر الأحمد الصباح - يربط العاصمة بالصبية بطول 36 كم عبر جون الكويت', 3500);
+            return;
+          }
+          const clickedId = hitObj.userData.stopId;
+          if (clickedId) {
+            onSelectStop(clickedId);
+          }
+        }
+      });
+    }
+
+    function flyCameraTo(targetPos, targetLookAt, duration = 1200) {
+      // إزالة وتفريغ أي رحلة جارية فوراً لمنع بقاء أي مركبة عالقة في المنتصف
+      if (currentJourney) {
+        cancelCurrentJourney(false);
+      }
+
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+      const startTime = performance.now();
+
+      cameraTween = {
+        update: (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const ease = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+          camera.position.lerpVectors(startPos, targetPos, ease);
+          controls.target.lerpVectors(startTarget, targetLookAt, ease);
+
+          if (progress >= 1) {
+            cameraTween = null;
+          }
+        }
+      };
+    }
+
+    function viewOverview() {
+      if (currentJourney) {
+        cancelCurrentJourney(false);
+      }
+      audio.click();
+      flyCameraTo(new THREE.Vector3(10, 175, 135), new THREE.Vector3(5, 0, 0), 1200);
+    }
+
+    function viewFocusStop(id) {
+      if (currentJourney) {
+        cancelCurrentJourney(false);
+      }
+      const stop = STOPS.find(s => s.id === id);
+      if (!stop) return;
+
+      const groundY = 2.35; // منسوب سطح اليابسة الفعلي
+      let targetLookAt, targetPos;
+
+      if (id === 1) {
+        // المحطة 1: جزيرة فيلكا ومعبد إيكاروس - زاوية صاعدة للأعمدة الإغريقية
+        targetLookAt = new THREE.Vector3(stop.x, groundY + 3.0, stop.z);
+        targetPos = new THREE.Vector3(stop.x + 4.2, groundY + 1.45, stop.z + 5.5);
+      } else if (id === 2) {
+        // المحطة 2: أبراج الكويت برأس عجوزة - زاوية شاهقة عملاقة للأبراج المتلألئة
+        targetLookAt = new THREE.Vector3(56.5, groundY + 7.8, -2.8);
+        targetPos = new THREE.Vector3(56.5 + 4.8, groundY + 1.45, -2.8 + 8.5);
+      } else if (id === 3) {
+        // المحطة 3: سوق المباركية التراثي الجديد - واجهة بوابة الدخول وأسقف الجندل
+        targetLookAt = new THREE.Vector3(34.2, groundY + 2.4, 2.2);
+        targetPos = new THREE.Vector3(34.2 + 2.6, groundY + 1.42, 5.5 + 4.5);
+      } else if (id === 4) {
+        // المحطة 4: كاظمة التاريخية (البيوت الطينية التراثية) - زاوية مميزة للبيوت الطينية وأبواب خشب التيك وأشجار النخيل
+        targetLookAt = new THREE.Vector3(28.0, groundY + 2.2, -17.5);
+        targetPos = new THREE.Vector3(28.0 + 3.5, groundY + 1.85, -14.0 + 4.8);
+      } else if (id === 5) {
+        // المحطة 5: ميناء مبارك الكبير بجزيرة بوبيان - زاوية مهيبة لأرصفة الحاويات والرافعات العملاقة
+        targetLookAt = new THREE.Vector3(74.0, groundY + 2.5, -49.0);
+        targetPos = new THREE.Vector3(74.0 + 6.8, groundY + 4.2, -49.0 + 8.8);
+      } else if (id === 6) {
+        // المحطة 6: أبراج مياه الكويت بالعبدلي والروضتين (برج ماي) - زاوية مهيبة لمجموعة الأبراج المخططة
+        targetLookAt = new THREE.Vector3(32.0, groundY + 3.0, -55.0);
+        targetPos = new THREE.Vector3(32.0 + 3.8, groundY + 1.45, -55.0 + 7.8);
+      } else if (id === 7) {
+        // المحطة 7: بيت الشعر البدوي التراثي بالسالمي - زاوية مقابلة لمدخل بيت الشعر والدلة والسدو
+        targetLookAt = new THREE.Vector3(-45.0, groundY + 1.6, -2.0);
+        targetPos = new THREE.Vector3(-45.0 + 2.8, groundY + 1.35, -2.0 + 5.6);
+      } else if (id === 8) {
+        // المحطة 8: القصر الأحمر بالجهراء - زاوية بطولية عملاقة أمام المدافع والأسوار الطينية
+        targetLookAt = new THREE.Vector3(3.0, groundY + 3.0, -3.5);
+        targetPos = new THREE.Vector3(3.0 + 3.8, groundY + 1.4, -0.6 + 5.2);
+      } else if (id === 9) {
+        // المحطة 9: مضخة استخراج النفط بحقل برقان - زاوية ثلاثية الأبعاد لمطرقة وحصان المضخة
+        targetLookAt = new THREE.Vector3(54.0, groundY + 3.2, 24.0);
+        targetPos = new THREE.Vector3(54.0 + 4.2, groundY + 1.45, 24.0 + 5.8);
+      } else if (id === 10) {
+        // المحطة 10: محارة ولؤلؤة مغاصات الخيران - زاوية مشرقة تكشف باطن المحارة واللؤلؤة الطبيعية
+        targetLookAt = new THREE.Vector3(62.0, groundY + 2.8, 65.0);
+        targetPos = new THREE.Vector3(62.0 + 3.6, groundY + 1.45, 65.0 + 5.4);
+      } else {
+        targetLookAt = new THREE.Vector3(stop.x, groundY + 3.0, stop.z);
+        targetPos = new THREE.Vector3(stop.x + 4.5, groundY + 1.5, stop.z + 6.5);
+      }
+
+      flyCameraTo(targetPos, targetLookAt, 1100);
+    }
+
+    let fleetCamIndex = 0;
+    const fleetViews = [
+      {
+        name: 'السفينة الملكية في جون الكويت والعاصمة',
+        cam: new THREE.Vector3(68, 8.5, -9),
+        target: new THREE.Vector3(57, 4.8, -17.5)
+      },
+      {
+        name: 'قارب جزيرة بوبيان وخور عبد الله (أقصى الشمال)',
+        cam: new THREE.Vector3(108, 5.5, -38),
+        target: new THREE.Vector3(98, 2.5, -48)
+      },
+      {
+        name: 'قارب ساحل الأحمدي ورأس الزور (الوسط الجنوبي)',
+        cam: new THREE.Vector3(88, 5.5, 22),
+        target: new THREE.Vector3(78, 2.5, 14)
+      },
+      {
+        name: 'سفينة الخيران والنويصيب في المياه الجنوبية المفتوحة',
+        cam: new THREE.Vector3(102, 8.5, 44),
+        target: new THREE.Vector3(90, 4.8, 36)
+      }
+    ];
+
+    function viewCoastView() {
+      if (currentJourney) {
+        cancelCurrentJourney(false);
+      }
+      audio.click();
+      const current = fleetViews[fleetCamIndex % fleetViews.length];
+      fleetCamIndex++;
+      flyCameraTo(current.cam, current.target, 1300);
+      showToast('⛵ منظر سينمائي: ' + current.name, 2400);
+    }
+
+    let toastTimer = null;
+    function showToast(text, duration = 2200) {
+      const toast = document.getElementById('gameToast');
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    }
+
+    let clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now();
+      const deltaSec = Math.min((now - lastAnimTime) * 0.001, 0.1);
+      lastAnimTime = now;
+
+      const time = clock.getElapsedTime();
+
+      // تحديث انميشن خطو الجمل WalkCycle أثناء السير
+      if (travelerMixer) {
+        travelerMixer.update(deltaSec);
+      }
+
+      // الحفاظ على القياسات الدقيقة للمعالم ثلاثية الأبعاد المصغرة ومنع تضخمها عند ابتعاد الكاميرا
+      for (let sId = 1; sId <= 10; sId++) {
+        const sObj = stopObjects[sId];
+        if (sObj && sObj.buildingModel && sObj.targetScale) {
+          const camDist = camera.position.distanceTo(sObj.group.position);
+          const factor = THREE.MathUtils.clamp((camDist - 30) / 100, 0, 1);
+          sObj.buildingModel.scale.setScalar(sObj.targetScale * (1.0 + factor * 0.35));
+        }
+      }
+
+      if (cameraTween) {
+        cameraTween.update(now);
+      }
+      controls.update();
+
+      // حماية الارتفاع: في وضع الفري كام نتيح حرية النزول والانخفاض لضبط الزوايا الصاعدة بكل دقة
+      if (!isFreeCamActive) {
+        if (controls.target.y < 2.45) controls.target.y = 2.45;
+        if (camera.position.y < 3.45) camera.position.y = 3.45;
+      } else {
+        if (camera.position.y < 0.2) camera.position.y = 0.2;
+      }
+
+      // تحديث مسجل الإحداثيات الحية للكاميرا الحرة
+      if (isFreeCamActive) {
+        updateFreeCamCoordsUI();
+      }
+
+      // تموجات مياه البحر الفيزيائية المحسنة
+      updateOceanWaves(time);
+
+      // تحديث وقت رغوة وزبد الشاطئ التفاعلي
+      if (coastalFoamMat) {
+        coastalFoamMat.uniforms.uTime.value = time;
+      }
+
+      // تحريك السحب ثلاثية الأبعاد بانسيابية عبر الأفق
+      updateDriftingClouds(time);
+
+      // توجيه هالة الشمس نحو الكاميرا دائماً
+      if (sunHaloMesh) {
+        sunHaloMesh.lookAt(camera.position);
+      }
+
+      // نبض حلقات المحطات التفاعلية
+      Object.values(stopObjects).forEach(obj => {
+        if (obj.pulseRing) {
+          const s = 1 + Math.sin(time * 3) * 0.12;
+          obj.pulseRing.scale.set(s, s, s);
+        }
+      });
+
+      // تمايل أسطول السفن ثلاثية الأبعاد الحقيقية في مواقعها الثابتة بأمان تام فوق الأمواج
+      maritimeFleet.forEach(item => {
+        if (item.rootGroup) {
+          // ارتفاع هادئ فوق الموجات مع ثبات تام في الموقع X و Z
+          item.rootGroup.position.y = item.baseY + Math.sin(time * item.speed + item.phase) * 0.12;
+        }
+        if (item.rockGroup) {
+          // تمايل جانبي خفيف وواقعي جداً
+          item.rockGroup.rotation.z = Math.sin(time * 1.5 + item.phase) * 0.025;
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // =========================================================================
+    // 6) المنطق التفاعلي وربط الواجهة (UI & HUD)
+    // =========================================================================
+    function onSelectStop(id) {
+      if (currentJourney) {
+        cancelCurrentJourney(false);
+      }
+      audio.click();
+      gameState.currentStopId = id;
+      updateUI();
+      viewFocusStop(id);
+    }
+
+    function updateUI() {
+      const curStop = STOPS.find(s => s.id === gameState.currentStopId) || STOPS[0];
+      const isDone = gameState.completedStops.includes(curStop.id);
+
+      const stagesBar = document.getElementById('stagesBar');
+      stagesBar.innerHTML = '';
+      STOPS.forEach(s => {
+        const completed = gameState.completedStops.includes(s.id);
+        const active = (s.id === gameState.currentStopId);
+        const locked = !completed && (s.id > gameState.completedStops.length + 1);
+
+        const pill = document.createElement('div');
+        pill.className = 'stage-pill ' + (completed ? 'completed ' : '') + (active ? 'active ' : '') + (locked ? 'locked' : '');
+        pill.textContent = completed ? '🇰🇼' : s.id;
+        pill.title = s.id + '. ' + s.title;
+        if (!locked) {
+          pill.onclick = () => onSelectStop(s.id);
+        }
+        stagesBar.appendChild(pill);
+      });
+
+      document.getElementById('cardStationTag').textContent = '📍 المحطة ' + curStop.id + ' من 10 · ' + curStop.place;
+      document.getElementById('cardStationName').textContent = (isDone ? '🇰🇼 ' : '') + curStop.title;
+      document.getElementById('cardStationDesc').textContent = isDone ?
+        'تم حل هذا التحدي التاريخي ورفع علم الكويت المرفرف فوق الموقع بنجاح!' :
+        'انقروا لبدء التحدي التاريخي لهذه المحطة لرفع علم الكويت ومد الخط للمحطة القادمة.';
+
+      const solveBtn = document.getElementById('solveChallengeBtn');
+      if (isDone) {
+        solveBtn.innerHTML = '<span>✓ استعراض السؤال (محلول)</span>';
+        solveBtn.className = 'action-btn-main completed-review';
+      } else {
+        solveBtn.innerHTML = '<span>🧩 حل تحدي المحطة ' + curStop.id + '</span>';
+        solveBtn.className = 'action-btn-main';
+      }
+
+      document.getElementById('flagsCounter').textContent = gameState.completedStops.length + ' / 10';
+      const rankIdx = Math.min(RANKS.length - 1, gameState.completedStops.length);
+      document.getElementById('rankBadge').textContent = RANKS[rankIdx];
+
+      renderDrawerList();
+      refreshStops3DVisuals();
+    }
+
+    function renderDrawerList() {
+      const list = document.getElementById('drawerList');
+      list.innerHTML = '';
+      STOPS.forEach(s => {
+        const isDone = gameState.completedStops.includes(s.id);
+        const isActive = (s.id === gameState.currentStopId);
+
+        const item = document.createElement('div');
+        item.className = 'drawer-item ' + (isDone ? 'done ' : '') + (isActive ? 'active' : '');
+        item.innerHTML = 
+          '<span style="font-size:16px;">' + (isDone ? '🇰🇼' : (isActive ? '📍' : '▫️')) + '</span>' +
+          '<div style="flex:1;">' +
+            '<div style="font-weight:800; font-size:13px; color:' + (isActive ? '#F5CE6A' : '#FFF') + ';">' + s.id + '. ' + s.title + '</div>' +
+            '<div style="font-size:11px; color:#8CAEB6;">' + s.place + '</div>' +
+          '</div>';
+        item.onclick = () => {
+          onSelectStop(s.id);
+          document.getElementById('stopsDrawer').classList.remove('open');
+        };
+        list.appendChild(item);
+      });
+    }
+
+    function openQuizModal() {
+      audio.init();
+      audio.click();
+      const stop = STOPS.find(s => s.id === gameState.currentStopId);
+      if (!stop) return;
+
+      // توجيه الكاميرا إلى الزاوية البطولية العملاقة للمبنى ليظهر ضخماً وشامخاً خلف التحدي
+      viewFocusStop(stop.id);
+
+      document.getElementById('modalBadge').textContent = 'المحطة ' + stop.id + ' من 10 · ' + stop.title;
+      document.getElementById('modalQuestionText').textContent = stop.question;
+
+      const grid = document.getElementById('modalOptionsGrid');
+      grid.innerHTML = '';
+      const exp = document.getElementById('modalExplanation');
+      exp.className = 'modal-explanation';
+      exp.innerHTML = '';
+      const advBtn = document.getElementById('modalAdvanceBtn');
+      advBtn.style.display = 'none';
+
+      const isAlreadyDone = gameState.completedStops.includes(stop.id);
+
+      // خلط مواضع الخيارات عشوائياً حتى لا تكون الإجابة دائماً في الخيار الأول
+      const shuffled = stop.options.map((opt, origIdx) => ({
+        text: opt,
+        isCorrect: (origIdx === stop.correct)
+      }));
+
+      // خلط عشوائي في كل فتح لنافذة التحدي
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      shuffled.forEach((item, displayIdx) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.innerHTML = '<span>' + item.text + '</span><span style="opacity:0.6; font-weight:800;">' + ['أ', 'ب', 'ج', 'د'][displayIdx] + '</span>';
+        if (isAlreadyDone && item.isCorrect) {
+          btn.classList.add('correct');
+        }
+        btn.onclick = () => onSelectOption(stop, item.isCorrect, btn);
+        grid.appendChild(btn);
+      });
+
+      if (isAlreadyDone) {
+        exp.innerHTML = `
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:#57E395; font-weight:800;">✔ محطة منجزة ومحلولة سابقاً</span>
+            <span style="font-size:11px; background:rgba(212,175,55,0.25); color:#F7DE8B; padding:2px 8px; border-radius:10px;">${stop.era || ''}</span>
+          </div>
+          <div style="line-height:1.6; color:#EAE0C8;">📜 <strong>التاريخ الوطني:</strong> ${stop.explanation}</div>
+        `;
+        exp.classList.add('show');
+      }
+
+      document.getElementById('quizModal').classList.add('open');
+    }
+
+    function onSelectOption(stop, isCorrect, btnElem) {
+      if (isCorrect) {
+        audio.correct();
+        btnElem.classList.add('correct');
+        document.querySelectorAll('.opt-btn').forEach(b => b.style.pointerEvents = 'none');
+
+        const exp = document.getElementById('modalExplanation');
+        exp.innerHTML = `
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <span style="color:#57E395; font-size:15px; font-weight:900;">✔ إجابة صحيحة ومتقنة!</span>
+            <span style="font-size:11.5px; background:rgba(212,175,55,0.3); color:#F7DE8B; padding:3px 10px; border-radius:12px; border:1px solid rgba(212,175,55,0.4);">${stop.era || ''}</span>
+          </div>
+          <div style="line-height:1.6; color:#FFF; font-size:13.5px; margin-bottom:6px;">
+            📜 <strong>تاريخ وتراث المعلم:</strong> ${stop.explanation}
+          </div>
+          <div style="font-size:11.5px; color:#A7D0D8;">
+            💡 <em>تم رفع راية الكويت وتسجيل وسام المحطة ${stop.id} في سجل إنجازاتك التراثية.</em>
+          </div>
+        `;
+        exp.classList.add('show');
+
+        const isNew = !gameState.completedStops.includes(stop.id);
+        if (isNew) {
+          gameState.completedStops.push(stop.id);
+          saveState();
+          setTimeout(() => audio.flagRaise(), 300);
+        }
+
+        const advBtn = document.getElementById('modalAdvanceBtn');
+        if (stop.id === 1) {
+          advBtn.innerHTML = '<span>ركوب سفينة البوم التراثية والإبحار إلى شاطئ العاصمة (المحطة 2) ⛵🌊</span>';
+        } else if (stop.id < 10) {
+          advBtn.innerHTML = '<span>المتابعة عبر المسار الصحراوي نحو المحطة ' + (stop.id + 1) + ' 🇰🇼〰️</span>';
+        } else {
+          advBtn.innerHTML = '<span>🏆 إتمام الرحلة والتتويج بوسام نوخذة الكويت الكبير!</span>';
+        }
+        advBtn.style.display = 'flex';
+        advBtn.onclick = () => {
+          document.getElementById('quizModal').classList.remove('open');
+          if (stop.id < 10) {
+            startTravelJourney(stop.id, stop.id + 1, () => {
+              gameState.currentStopId = stop.id + 1;
+              updateUI();
+            });
+          } else {
+            showVictoryScreen();
+          }
+        };
+
+      } else {
+        audio.wrong();
+        btnElem.classList.add('wrong');
+        setTimeout(() => btnElem.classList.remove('wrong'), 700);
+      }
+    }
+
+    function showVictoryScreen() {
+      audio.victory();
+      document.getElementById('winTime').textContent = document.getElementById('teamTimer').textContent;
+      document.getElementById('winModal').classList.add('open');
+      updateUI();
+      flyCameraTo(new THREE.Vector3(25, 110, 115), new THREE.Vector3(35, 0, 0), 1600);
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 1.2;
+    }
+
+    function startTimer() {
+      if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+      gameState.timerInterval = setInterval(() => {
+        const sec = Math.floor((Date.now() - gameState.startTime) / 1000);
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        document.getElementById('teamTimer').textContent = m + ':' + s;
+      }, 1000);
+    }
+
+    function updateFreeCamCoordsUI() {
+      const fcCamPos = document.getElementById('fcCamPos');
+      const fcTargetPos = document.getElementById('fcTargetPos');
+      const fcCodePreview = document.getElementById('fcCodePreview');
+      if (!fcCamPos || !fcTargetPos || !camera || !controls) return;
+
+      const cx = camera.position.x.toFixed(1);
+      const cy = camera.position.y.toFixed(1);
+      const cz = camera.position.z.toFixed(1);
+
+      const tx = controls.target.x.toFixed(1);
+      const ty = controls.target.y.toFixed(1);
+      const tz = controls.target.z.toFixed(1);
+
+      fcCamPos.textContent = `X: ${cx} | Y: ${cy} | Z: ${cz}`;
+      fcTargetPos.textContent = `X: ${tx} | Y: ${ty} | Z: ${tz}`;
+
+      if (fcCodePreview) {
+        fcCodePreview.innerHTML = `targetPos = new THREE.Vector3(${cx}, ${cy}, ${cz});<br>targetLookAt = new THREE.Vector3(${tx}, ${ty}, ${tz});`;
+      }
+    }
+
+    function setupUIEvents() {
+      // إعداد لوحة وأزرار الكاميرا الحرة ومسجل الإحداثيات المباشر
+      const camFreeToggleBtn = document.getElementById('camFreeToggleBtn');
+      const freeCamHud = document.getElementById('freeCamHud');
+      const freeCamBtnLabel = document.getElementById('freeCamBtnLabel');
+
+      if (camFreeToggleBtn) {
+        camFreeToggleBtn.onclick = () => {
+          isFreeCamActive = !isFreeCamActive;
+          if (isFreeCamActive) {
+            camFreeToggleBtn.classList.add('active');
+            if (freeCamBtnLabel) freeCamBtnLabel.textContent = 'فري كام (مفعل)';
+            if (freeCamHud) freeCamHud.style.display = 'block';
+            showToast('🎥 تم تفعيل الكاميرا الحرة ومسجل الإحداثيات', 2200);
+          } else {
+            camFreeToggleBtn.classList.remove('active');
+            if (freeCamBtnLabel) freeCamBtnLabel.textContent = 'فري كام (معطل)';
+            if (freeCamHud) freeCamHud.style.display = 'none';
+            showToast('🔒 تم العودة لوضع الكاميرا المقيد', 2200);
+          }
+        };
+      }
+
+      const freeCamMinBtn = document.getElementById('freeCamMinBtn');
+      if (freeCamMinBtn && freeCamHud) {
+        freeCamMinBtn.onclick = () => {
+          freeCamHud.classList.toggle('minimized');
+          freeCamMinBtn.textContent = freeCamHud.classList.contains('minimized') ? '+' : '−';
+        };
+      }
+
+      const fcJumpStopBtn = document.getElementById('fcJumpStopBtn');
+      const freeCamStopSelect = document.getElementById('freeCamStopSelect');
+      if (fcJumpStopBtn && freeCamStopSelect) {
+        fcJumpStopBtn.onclick = () => {
+          if (freeCamStopSelect.value === 'causeway') {
+            flyCameraTo(new THREE.Vector3(40.0, 28.0, 25.0), new THREE.Vector3(49.0, 2.5, -16.0), 1200);
+            showToast('🌉 طيران الكاميرا لمشاهدة صرح جسر الشيخ جابر الأحمد في جون الكويت', 2500);
+            return;
+          }
+          const sId = parseInt(freeCamStopSelect.value);
+          viewFocusStop(sId);
+          showToast(`🚀 طيران الكاميرا بجوار المحطة ${sId} للضبط الحر`, 2000);
+        };
+      }
+
+      if (freeCamStopSelect) {
+        freeCamStopSelect.onchange = () => {
+          if (freeCamStopSelect.value === 'causeway') {
+            flyCameraTo(new THREE.Vector3(40.0, 28.0, 25.0), new THREE.Vector3(49.0, 2.5, -16.0), 1200);
+            return;
+          }
+          const sId = parseInt(freeCamStopSelect.value);
+          // إذا كان لديه إحداثيات محفوظة مسبقاً لهذه المحطة يمكن نقل الكاميرا إليها
+          if (savedCustomStopCoords[sId]) {
+            const sc = savedCustomStopCoords[sId];
+            flyCameraTo(
+              new THREE.Vector3(parseFloat(sc.cam[0]), parseFloat(sc.cam[1]), parseFloat(sc.cam[2])),
+              new THREE.Vector3(parseFloat(sc.target[0]), parseFloat(sc.target[1]), parseFloat(sc.target[2])),
+              800
+            );
+          }
+        };
+      }
+
+      const fcCopyCurrentBtn = document.getElementById('fcCopyCurrentBtn');
+      if (fcCopyCurrentBtn) {
+        fcCopyCurrentBtn.onclick = () => {
+          const sId = freeCamStopSelect ? parseInt(freeCamStopSelect.value) : 1;
+          const stop = STOPS.find(s => s.id === sId);
+          const stopName = stop ? stop.title : `المحطة ${sId}`;
+          const cx = camera.position.x.toFixed(1);
+          const cy = camera.position.y.toFixed(1);
+          const cz = camera.position.z.toFixed(1);
+          const tx = controls.target.x.toFixed(1);
+          const ty = controls.target.y.toFixed(1);
+          const tz = controls.target.z.toFixed(1);
+
+          const copyText = `المحطة ${sId} (${stopName}):\ncam: new THREE.Vector3(${cx}, ${cy}, ${cz}),\ntarget: new THREE.Vector3(${tx}, ${ty}, ${tz})`;
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(copyText).then(() => {
+              showToast(`📋 تم نسخ إحداثيات المحطة ${sId} بنجاح!`, 2500);
+            }).catch(() => {
+              prompt('انسخ إحداثيات النقطة:', copyText);
+            });
+          } else {
+            prompt('انسخ إحداثيات النقطة:', copyText);
+          }
+        };
+      }
+
+      const fcSaveStopBtn = document.getElementById('fcSaveStopBtn');
+      if (fcSaveStopBtn) {
+        fcSaveStopBtn.onclick = () => {
+          const sId = freeCamStopSelect ? parseInt(freeCamStopSelect.value) : 1;
+          const stop = STOPS.find(s => s.id === sId);
+          const stopName = stop ? stop.title : `المحطة ${sId}`;
+          const cx = camera.position.x.toFixed(1);
+          const cy = camera.position.y.toFixed(1);
+          const cz = camera.position.z.toFixed(1);
+          const tx = controls.target.x.toFixed(1);
+          const ty = controls.target.y.toFixed(1);
+          const tz = controls.target.z.toFixed(1);
+
+          savedCustomStopCoords[sId] = {
+            id: sId,
+            name: stopName,
+            cam: [cx, cy, cz],
+            target: [tx, ty, tz]
+          };
+
+          showToast(`💾 تم حفظ إحداثيات المحطة ${sId}! (المجموع: ${Object.keys(savedCustomStopCoords).length} من 10)`, 2500);
+        };
+      }
+
+      const fcCopyAllBtn = document.getElementById('fcCopyAllBtn');
+      if (fcCopyAllBtn) {
+        fcCopyAllBtn.onclick = () => {
+          const lines = ['// إحداثيات الكاميرا الجديدة للمعالم:'];
+          const keys = Object.keys(savedCustomStopCoords);
+          if (keys.length === 0) {
+            const sId = freeCamStopSelect ? parseInt(freeCamStopSelect.value) : 1;
+            const cx = camera.position.x.toFixed(1);
+            const cy = camera.position.y.toFixed(1);
+            const cz = camera.position.z.toFixed(1);
+            const tx = controls.target.x.toFixed(1);
+            const ty = controls.target.y.toFixed(1);
+            const tz = controls.target.z.toFixed(1);
+            lines.push(`المحطة ${sId}:`);
+            lines.push(`cam: new THREE.Vector3(${cx}, ${cy}, ${cz}), target: new THREE.Vector3(${tx}, ${ty}, ${tz})`);
+          } else {
+            keys.sort((a,b) => parseInt(a) - parseInt(b)).forEach(k => {
+              const item = savedCustomStopCoords[k];
+              lines.push(`المحطة ${item.id} (${item.name}):`);
+              lines.push(`  cam: new THREE.Vector3(${item.cam[0]}, ${item.cam[1]}, ${item.cam[2]}),`);
+              lines.push(`  target: new THREE.Vector3(${item.target[0]}, ${item.target[1]}, ${item.target[2]})`);
+            });
+          }
+
+          const fullText = lines.join('\n');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(fullText).then(() => {
+              showToast(`📦 تم نسخ تقرير جميع المحطات للحافظة!`, 3000);
+            }).catch(() => {
+              prompt('انسخ تقرير الإحداثيات:', fullText);
+            });
+          } else {
+            prompt('انسخ تقرير الإحداثيات:', fullText);
+          }
+        };
+      }
+      document.getElementById('solveChallengeBtn').onclick = () => {
+        if (currentJourney) {
+          cancelCurrentJourney(true);
+        }
+        openQuizModal();
+      };
+
+      document.getElementById('closeModalBtn').onclick = () => {
+        audio.click();
+        document.getElementById('quizModal').classList.remove('open');
+      };
+
+      document.getElementById('camOverviewBtn').onclick = viewOverview;
+      document.getElementById('camFocusBtn').onclick = () => {
+        if (currentJourney) {
+          cancelCurrentJourney(false);
+        }
+        viewFocusStop(gameState.currentStopId);
+      };
+      document.getElementById('camCoastBtn').onclick = viewCoastView;
+
+      document.getElementById('drawerToggleBtn').onclick = () => {
+        audio.click();
+        document.getElementById('stopsDrawer').classList.toggle('open');
+      };
+      document.getElementById('closeDrawerBtn').onclick = () => {
+        document.getElementById('stopsDrawer').classList.remove('open');
+      };
+
+      document.getElementById('soundToggleBtn').onclick = () => {
+        audio.muted = !audio.muted;
+        document.getElementById('soundToggleBtn').textContent = audio.muted ? '🔇' : '🔊';
+      };
+
+      document.getElementById('fullscreenBtn').onclick = () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      };
+
+      const vehicleBtn = document.getElementById('vehicleToggleBtn');
+      if (vehicleBtn) {
+        vehicleBtn.onclick = toggleVehicleType;
+      }
+      updateVehicleButtonUI();
+
+      document.getElementById('restartGameBtn').onclick = () => {
+        if (confirm('هل ترغبون في إعادة استكشاف المحطات العشر من البداية؟')) {
+          localStorage.removeItem('kuwait_3d_state_v7');
+          gameState.completedStops = [];
+          gameState.currentStopId = 1;
+          gameState.startTime = Date.now();
+          controls.autoRotate = false;
+          document.getElementById('winModal').classList.remove('open');
+          updateUI();
+          viewOverview();
+          audio.click();
+        }
+      };
+    }
+
+    // =========================================================================
+    // 7) تهيئة التطبيق عند فتح الصفحة
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      init3D();
+      setupUIEvents();
+      updateUI();
+      startTimer();
+      setTimeout(() => {
+        viewFocusStop(gameState.currentStopId);
+      }, 600);
+    });
+  </script>
+</body>
+</html>
