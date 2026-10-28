@@ -1,0 +1,26 @@
+{
+  "name": "kuwait-history-journey-3d",
+  "version": "1.0.0",
+  "description": "خريطة تاريخ الكويت ثلاثية الأبعاد - رحلة تعليمية وتراثية تفاعلية",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node builder.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "express": "^4.19.2"
+  },
+  "keywords": [
+    "kuwait",
+    "history",
+    "threejs",
+    "3d",
+    "education"
+  ],
+  "author": "",
+  "license": "ISC"
+}
